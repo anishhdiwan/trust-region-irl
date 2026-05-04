@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>TRIRL: Trust Region Inverse Reinforcement Learning | ICML 2026</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- SEO -->
+  <meta name="description" content="Trust Region Inverse Reinforcement Learning (TRIRL) — a principled, non-adversarial IRL algorithm achieving monotonic improvement without full RL inner loops. Outperforms GAIL, AIRL, AMP, LSIQ, NEAR by 2.4× IQM. ICML 2026.">
+  <meta name="keywords" content="Inverse Reinforcement Learning, Imitation Learning, Trust Region, Reward Learning, IRL, Reinforcement Learning, Robotics, ICML 2026, TRIRL, GAIL, MaxEnt IRL">
+  <meta name="author" content="Anish Diwan, Davide Tateo, Christopher E. Mower, Haitham Bou Ammar, Jan Peters, Oleg Arenz">
+  <link rel="canonical" href="https://[YOUR_GITHUB_USERNAME].github.io/trust-region-irl/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Trust Region Inverse Reinforcement Learning | ICML 2026">
+  <meta property="og:description" content="TRIRL bridges classical and adversarial IRL — monotonic improvement, no full RL inner loop, global transferable rewards. 2.4× IQM over state-of-the-art.">
+  <meta property="og:url" content="https://[YOUR_GITHUB_USERNAME].github.io/trust-region-irl/">
+  <meta property="article:published_time" content="2026-07-01">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Trust Region Inverse Reinforcement Learning | ICML 2026">
+  <meta name="twitter:description" content="TRIRL: monotonic IRL without full RL inner loops. 2.4× IQM over GAIL, AIRL, AMP, LSIQ, NEAR. Global, transferable rewards.">
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:          #ffffff;
+      --text:        #111111;
+      --heading:     #111111;
+      --link:        #2563eb;
+      --border:      #e5e7eb;
+      --muted:       #6b7280;
+      --subtle:      #9ca3af;
+      --badge-bg:    #eff6ff;
+      --badge-text:  #1d4ed8;
+      --surface:     #f9fafb;
+      --hl-border:   #2563eb;
+      --card-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    body.dark {
+      --bg:          #0f1117;
+      --text:        #d1d5db;
+      --heading:     #f9fafb;
+      --link:        #60a5fa;
+      --border:      #1f2937;
+      --muted:       #9ca3af;
+      --subtle:      #6b7280;
+      --badge-bg:    #172554;
+      --badge-text:  #93c5fd;
+      --surface:     #161b27;
+      --hl-border:   #3b82f6;
+      --card-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* ── Layout ── */
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 52px 40px 88px;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    .nav-back {
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+      border: none;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--link); }
+    .dark-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--muted);
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .dark-btn:hover { color: var(--heading); }
+
+    /* ── Venue badge ── */
+    .badge {
+      display: inline-block;
+      font-size: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--badge-text);
+      background: var(--badge-bg);
+      padding: 2px 10px 2px 13px;
+      border-radius: 4px;
+      margin-bottom: 22px;
+    }
+
+    /* ── Title ── */
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+    .title-abbr {
+      font-size: 68px;
+      font-weight: 700;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .grad {
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-full {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: var(--heading);
+    }
+
+    /* ── Authors ── */
+    .authors {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .affils {
+      font-size: 13px;
+      color: var(--subtle);
+      margin-bottom: 22px;
+    }
+
+    /* ── Pill buttons ── */
+    .links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+    .links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--bg);
+      background: var(--heading);
+      padding: 9px 18px;
+      border-radius: 9999px;
+      text-decoration: none;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .links a:hover {
+      background: var(--link);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(37,99,235,0.28);
+    }
+
+    /* ── TL;DR ── */
+    .tldr {
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      line-height: 1.55;
+      color: var(--heading);
+      margin-bottom: 36px;
+    }
+
+    /* ── Feature cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px 16px;
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+    }
+    .card-stat {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--link);
+      margin-bottom: 3px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--heading);
+      margin: 52px 0 18px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    h3 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin: 28px 0 10px;
+    }
+
+    p {
+      margin-bottom: 15px;
+      color: var(--text);
+    }
+    p:last-child { margin-bottom: 0; }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    a:hover { border-bottom-color: var(--link); }
+
+    /* ── Highlight block ── */
+    .hl {
+      background: var(--surface);
+      border-left: 3px solid var(--hl-border);
+      border-radius: 0 7px 7px 0;
+      padding: 18px 22px;
+      margin: 22px 0;
+      overflow-x: auto;
+    }
+    .hl p { margin: 0; }
+
+    /* ── Theorem ── */
+    .theorem {
+      background: var(--surface);
+      border-left: 3px solid var(--link);
+      border-radius: 0 7px 7px 0;
+      padding: 16px 22px;
+      margin: 18px 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .theorem .lbl { font-weight: 700; color: var(--link); }
+
+    /* ── Figure placeholder ── */
+    .fig-ph {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--subtle);
+      font-size: 13px;
+      font-style: italic;
+      margin: 20px 0 8px;
+      padding: 48px 0;
+      transition: background 0.3s;
+    }
+    figcaption {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    /* ── Citation ── */
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-size: 13px;
+      line-height: 1.65;
+      overflow-x: auto;
+      white-space: pre;
+      transition: background 0.3s;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 72px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--subtle);
+    }
+    footer a { color: var(--subtle); border-bottom: none; }
+    footer a:hover { color: var(--link); }
+
+    /* ── Scroll animations ── */
+    .fi {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+    }
+    .fi.vis { opacity: 1; transform: translateY(0); }
+
+    /* stagger for cards */
+    .cards .card:nth-child(1) { transition-delay: 0.00s; }
+    .cards .card:nth-child(2) { transition-delay: 0.08s; }
+    .cards .card:nth-child(3) { transition-delay: 0.16s; }
+    .cards .card:nth-child(4) { transition-delay: 0.24s; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .wrap { padding: 36px 20px 60px; }
+      .title-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .title-abbr { font-size: 48px; }
+      .title-full { font-size: 21px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Nav -->
+  <div class="nav fi">
+    <a href="[YOUR_PORTFOLIO_URL]" class="nav-back">← Back</a>
+    <button id="dark-btn" class="dark-btn" aria-label="Toggle dark mode">
+      <i class="fas fa-moon"></i>
+    </button>
+  </div>
+
+  <!-- Venue -->
+  <div class="fi"><span class="badge">ICML 2026</span></div>
+
+  <!-- Title -->
+  <h1 class="title-row fi" style="margin-bottom:16px;">
+    <div class="title-abbr"><span class="grad">TRIRL</span></div>
+    <div class="title-full">Trust Region Inverse Reinforcement Learning</div>
+  </h1>
+
+  <!-- Authors -->
+  <p class="authors fi">
+    Anish Diwan,&ensp;Davide Tateo,&ensp;Christopher E. Mower,&ensp;Haitham Bou Ammar,&ensp;Jan Peters,&ensp;Oleg Arenz
+  </p>
+  <p class="affils fi">
+    TU Darmstadt &middot; Lund University &middot; Noah's Ark Lab &middot; University College London &middot; Hessian.ai &middot; DFKI &middot; Robotics Institute Germany
+  </p>
+
+  <!-- Buttons -->
+  <div class="links fi">
+    <a href="[PAPER_URL]"><i class="fas fa-file-alt"></i> Paper</a>
+    <a href="[ARXIV_URL]"><i class="fas fa-file-pdf"></i> arXiv</a>
+    <a href="[CODE_URL]"><i class="fab fa-github"></i> Code</a>
+    <a href="#citation"><i class="fas fa-quote-right"></i> Cite</a>
+  </div>
+
+  <!-- TL;DR -->
+  <p class="tldr fi">
+    <span class="grad" style="font-weight:700;">TL;DR</span>&ensp;
+    We bridge classical and adversarial IRL — TRIRL achieves monotonic improvement on the IRL objective using cheap trust-region policy updates and reward correction, without ever solving a full RL problem per iteration.
+    It outperforms GAIL, AIRL, AMP, LSIQ, NEAR, and SFM by <strong>2.4&times;&nbsp;IQM</strong> and learns global, transferable reward functions.
+  </p>
+
+  <!-- Feature cards -->
+  <div class="cards">
+    <div class="card fi">
+      <div class="card-stat">2.4×</div>
+      <div class="card-title">IQM over all baselines</div>
+      <div class="card-desc">Outperforms GAIL, AIRL, AMP, LSIQ, NEAR, and SFM on MuJoCo and humanoid locomotion tasks.</div>
+    </div>
+    <div class="card fi">
+      <div class="card-stat">Monotonic</div>
+      <div class="card-title">Guaranteed improvement</div>
+      <div class="card-desc">Dual-ascent on the MCE-IRL objective with provable monotonic improvement at every iteration.</div>
+    </div>
+    <div class="card fi">
+      <div class="card-stat">No full RL</div>
+      <div class="card-title">Efficient inner loop</div>
+      <div class="card-desc">Trust-region policy updates replace expensive full RL solves — practical for real-world, high-dimensional tasks.</div>
+    </div>
+    <div class="card fi">
+      <div class="card-stat">Global</div>
+      <div class="card-title">Transferable rewards</div>
+      <div class="card-desc">Learns reward functions that re-optimize from scratch and transfer across environment dynamics shifts.</div>
+    </div>
+  </div>
+
+  <!-- ─── Abstract ─── -->
+  <h2 class="fi">Abstract</h2>
+  <p class="fi">
+    Inverse reinforcement learning (IRL) is typically formulated as maximizing entropy subject to matching the distribution of expert trajectories. Classical dual-ascent IRL guarantees monotonic improvement but requires fully solving an RL problem each iteration. Adversarial methods skip this cost — but sacrifice stability and monotonic improvement by replacing the global reward with local discriminator outputs.
+  </p>
+  <p class="fi">
+    We bridge the gap. Our central insight is that a trust-region-optimal policy for a reward update can be globally optimal for a <em>smaller update in the same direction</em>. This allows us to explicitly optimize the IRL dual objective using only a local policy search around the current iterate. The resulting algorithm, <strong>TRIRL</strong>, avoids adversarial instabilities, provides monotonic improvement guarantees, and learns a globally-optimizable reward function — one that can be re-optimized from scratch and transferred to new environments.
+  </p>
+  <p class="fi">
+    TRIRL outperforms state-of-the-art imitation learning methods by a factor of <strong>2.4&times;</strong> in aggregate inter-quartile mean across challenging MuJoCo and humanoid robotics tasks.
+  </p>
+
+  <!-- ─── Key Insight ─── -->
+  <h2 class="fi">Key Insight</h2>
+  <p class="fi">
+    The MCE-IRL dual objective is improved by iterative function-space reward updates:
+  </p>
+  <div class="hl fi">
+    $$r^{(i+1)} = r^{(i)} - \epsilon\!\left(r^{(i)} - \beta\log\frac{\rho_E(\mathbf{s},\mathbf{a})}{\rho_{\pi^{(i)}}(\mathbf{s},\mathbf{a})}\right)$$
+  </div>
+  <p class="fi">
+    Each update requires the MCE-optimal policy $\pi^{(i)}$ — which, classically, demands running RL to convergence. TRIRL avoids this with a key equivalence:
+  </p>
+  <div class="theorem fi">
+    <span class="lbl">Theorem (informal).</span>&ensp;
+    A trust-region-optimal policy for the updated reward $\tilde{r}^{(i+1)}$ with step size $\epsilon$ is the MCE-optimal policy for a <em>corrected</em> reward $r^{(i+1)}$ with a smaller step $\epsilon_\mathrm{tr} = \epsilon\,/\,(1 + \eta)$, where $\eta \geq 0$ is the Lagrangian multiplier of the trust-region constraint.
+  </div>
+  <p class="fi">
+    In practice: run a trust-region policy update, read off the Lagrange multiplier $\eta$, and shrink the reward step accordingly. The resulting policy–reward pair is MCE-valid. Repeat to monotonically improve the dual objective — no full RL solve required.
+  </p>
+
+  <figure class="fi">
+    <div class="fig-ph">[Figure: TRIRL vs. MCE-IRL — correction illustration]</div>
+    <figcaption>
+      <strong>Figure 1.</strong> A comparison of TRIRL and a standard MCE-IRL update on the Lagrangian dual $\mathcal{L}(\pi, r)$.
+      MCE-IRL runs RL to convergence after each reward update. TRIRL instead optimizes within a trust region and corrects the reward step — both guarantee monotonic progress, but TRIRL is dramatically cheaper.
+    </figcaption>
+  </figure>
+
+  <!-- ─── Results ─── -->
+  <h2 class="fi">Results</h2>
+  <p class="fi">
+    We compare against GAIL, AIRL, AMP, LSIQ, NEAR, and SFM on five MuJoCo benchmarks and three challenging humanoid locomotion tasks (Unitree G1 Walking/Running, Unitree Go2 Locomotion), reporting mean performance across 20 independent seeds. TRIRL uses motion-capture demonstrations with state-based observations for the G1 tasks.
+  </p>
+
+  <figure class="fi">
+    <div class="fig-ph" style="padding: 64px 0;">[Figure: Imitation learning results across all environments]</div>
+    <figcaption>
+      <strong>Figure 2.</strong> TRIRL matches or outperforms all baselines in every environment,
+      achieving a <strong>2.4&times;</strong> aggregate IQM improvement. The TR-loss variant — which uses a simple penalty rather than projection layers — also consistently outperforms most baselines.
+    </figcaption>
+  </figure>
+
+  <h3 class="fi">Global &amp; Transferable Reward Functions</h3>
+  <p class="fi">
+    Unlike adversarial methods, TRIRL learns a global reward function — one that can be re-optimized from a fresh random policy initialization and transfers to environments with modified dynamics (Ant with disabled legs, HalfCheetah with wind, HalfCheetah with Mars gravity). TRIRL outperforms AIRL and NEAR in all retraining and transfer settings.
+  </p>
+
+  <figure class="fi">
+    <div class="fig-ph">[Figure: Reward transfer results across dynamics shifts]</div>
+    <figcaption>
+      <strong>Figure 3.</strong> Training, retraining, and transfer performance. TRIRL's global reward ensures reliable convergence on retraining, whereas baselines frequently fail due to locally-defined rewards entangled with the training policy.
+    </figcaption>
+  </figure>
+
+  <!-- ─── Citation ─── -->
+  <h2 id="citation" class="fi">Citation</h2>
+  <pre class="fi">@inproceedings{diwan2026trirl,
+  title     = {Trust Region Inverse Reinforcement Learning},
+  author    = {Diwan, Anish and Tateo, Davide and Mower, Christopher E.
+               and {Bou Ammar}, Haitham and Peters, Jan and Arenz, Oleg},
+  booktitle = {Proceedings of the 43rd International Conference on
+               Machine Learning (ICML)},
+  year      = {2026}
+}</pre>
+
+  <footer class="fi">
+    <p>
+      Correspondence: <a href="mailto:anish.diwan@robot-learning.de">anish.diwan@robot-learning.de</a>
+      &ensp;&middot;&ensp; ICML 2026
+    </p>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+  // ── Scroll animations ──
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('vis'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.fi').forEach(el => io.observe(el));
+
+  // ── Dark mode ──
+  const btn  = document.getElementById('dark-btn');
+  const icon = btn.querySelector('i');
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    icon.className = 'fas fa-sun';
+  }
+  btn.addEventListener('click', () => {
+    const on = document.body.classList.toggle('dark');
+    localStorage.setItem('theme', on ? 'dark' : 'light');
+    icon.className = on ? 'fas fa-sun' : 'fas fa-moon';
+  });
+</script>
+
+</body>
+</html>
