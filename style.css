@@ -1,0 +1,675 @@
+/* ══════════════════════════════════════════════════════════════
+ * TRIRL PAPER SITE — MASTER STYLESHEET
+ * ══════════════════════════════════════════════════════════════
+ *
+ * ┌─────────────────────────────────────────────────────────┐
+ * │  SECTION 1 · CONFIG  — edit only this section           │
+ * │  to restyle the entire site.                            │
+ * └─────────────────────────────────────────────────────────┘
+ *
+ * All colours, fonts, sizes, and radii live here as CSS
+ * custom properties. Everything below this block references
+ * them exclusively — change a value once, it applies site-wide.
+ * ══════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── FONT ────────────────────────────────────────────────────
+   * To change the typeface:
+   *   1. Replace the Google Fonts <link> URL in each HTML file's
+   *      <head> (look for the "FONT" comment block there).
+   *   2. Update the family name in --font-body below.
+   * ----------------------------------------------------------- */
+  --font-body   : 'DM Sans', system-ui, sans-serif;
+  --font-mono   : 'DM Mono', 'Fira Code', 'Courier New', monospace;
+
+  /* ── TYPE SCALE ──────────────────────────────────────────── */
+  --text-xs     : 11px;   /* tiny labels, badges                */
+  --text-sm     : 13px;   /* captions, metadata, footer         */
+  --text-base   : 15px;   /* body copy                          */
+  --text-lg     : 16px;   /* TL;DR, lead paragraph              */
+  --text-h1     : 25px;   /* paper title                        */
+  --text-h2     : 12px;   /* section labels (uppercase)         */
+  --text-stat   : 22px;   /* stat strip numbers                 */
+  --lh-base     : 1.72;   /* body line-height                   */
+  --lh-tight    : 1.25;   /* headings                           */
+
+  /* ── COLOURS — light mode ────────────────────────────────── */
+  --c-bg        : #f5f7fd;   /* page background                 */
+  --c-surf      : #ffffff;   /* cards, code blocks, pre         */
+  --c-surf2     : #edf2fc;   /* hero tint, theorem background   */
+  --c-accent    : #1d6fe8;   /* primary highlight colour        */
+  --c-text      : #18181b;   /* body text                       */
+  --c-head      : #0d0e14;   /* headings                        */
+  --c-muted     : #556070;   /* secondary text                  */
+  --c-subtle    : #8a9cb0;   /* labels, placeholders            */
+  --c-border    : #dce4ef;   /* borders                         */
+  --c-dot       : #c4cfdf;   /* dot-grid dots in hero           */
+
+  /* ── COLOURS — dark mode (override block below) ─────────── */
+  /* See "body.dark { ... }" section to adjust dark-mode tones  */
+
+  /* ── LAYOUT ─────────────────────────────────────────────── */
+  --page-w      : 800px;    /* max content width                */
+  --page-pad    : 40px;     /* horizontal padding (desktop)     */
+  --page-pad-sm : 20px;     /* horizontal padding (mobile)      */
+
+  /* ── RADII ───────────────────────────────────────────────── */
+  --r-sm        : 4px;   /* tags, badges, buttons               */
+  --r-md        : 6px;   /* theorem, equation blocks            */
+  --r-lg        : 9px;   /* hero, cards, figure wrappers        */
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * DARK MODE — colour-only overrides.
+ * Layout, spacing, typography stay as declared above.
+ * ────────────────────────────────────────────────────────────── */
+body.dark {
+  --c-bg        : #0a0c12;
+  --c-surf      : #10131d;
+  --c-surf2     : #141828;
+  --c-accent    : #5ba3f5;
+  --c-text      : #d3dae6;
+  --c-head      : #edf2f7;
+  --c-muted     : #7a8fa8;
+  --c-subtle    : #475669;
+  --c-border    : #1d2433;
+  --c-dot       : #273040;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 2 · RESET & BASE
+ * ══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family   : var(--font-body);
+  font-size     : var(--text-base);
+  line-height   : var(--lh-base);
+  color         : var(--c-text);
+  background    : var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  transition    : background .3s ease, color .3s ease;
+}
+
+img, svg { display: block; max-width: 100%; }
+
+a {
+  color           : var(--c-accent);
+  text-decoration : none;
+  border-bottom   : 1px solid var(--c-border);
+  transition      : border-color .15s;
+}
+a:hover { border-bottom-color: var(--c-accent); }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 3 · PAGE LAYOUT
+ * ══════════════════════════════════════════════════════════════ */
+
+.page {
+  max-width : var(--page-w);
+  margin    : 0 auto;
+  padding   : 44px var(--page-pad) 88px;
+}
+
+/* narrower column for blog posts */
+.page--blog {
+  max-width : 680px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 4 · NAVIGATION BAR
+ * ══════════════════════════════════════════════════════════════ */
+
+.site-nav {
+  display         : flex;
+  justify-content : space-between;
+  align-items     : center;
+  margin-bottom   : 36px;
+}
+
+.nav-back {
+  font-size   : var(--text-sm);
+  color       : var(--c-muted);
+  text-decoration: none;
+  border      : none;
+  transition  : color .2s;
+}
+.nav-back:hover { color: var(--c-accent); border: none; }
+
+.theme-btn {
+  background : none;
+  border     : none;
+  cursor     : pointer;
+  font-size  : 15px;
+  color      : var(--c-subtle);
+  padding    : 2px;
+  transition : color .2s;
+  line-height: 1;
+}
+.theme-btn:hover { color: var(--c-head); }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 5 · PAGE HEADER ELEMENTS
+ * (venue tag, title, authors, affiliations)
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── Venue / badge tag ── */
+.venue-tag {
+  display      : inline-block;
+  font-size    : var(--text-xs);
+  font-weight  : 700;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  color        : var(--c-accent);
+  background   : var(--c-surf2);
+  border       : 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding      : 3px 10px;
+  margin-bottom: 18px;
+}
+
+/* ── Paper / post title ── */
+.site-title {
+  font-size    : var(--text-h1);
+  font-weight  : 700;
+  letter-spacing: -.025em;
+  line-height  : var(--lh-tight);
+  color        : var(--c-head);
+  margin-bottom: 14px;
+}
+/* Coloured fragment inside the title */
+.title-accent { color: var(--c-accent); }
+
+/* ── Authors ── */
+.authors {
+  font-size    : var(--text-sm);
+  color        : var(--c-muted);
+  margin-bottom: 4px;
+}
+
+/* ── Affiliations ── */
+.affils {
+  font-size    : 12px;
+  color        : var(--c-subtle);
+  margin-bottom: 22px;
+  line-height  : 1.55;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 6 · BUTTONS
+ * Visual variants: .btn (outlined) and .btn--primary (filled).
+ * ══════════════════════════════════════════════════════════════ */
+
+.btns {
+  display    : flex;
+  flex-wrap  : wrap;
+  gap        : 8px;
+  margin-bottom: 32px;
+}
+
+.btn {
+  display        : inline-flex;
+  align-items    : center;
+  gap            : 6px;
+  font-family    : var(--font-body);
+  font-size      : var(--text-sm);
+  font-weight    : 600;
+  padding        : 7px 15px;
+  border-radius  : var(--r-sm);
+  border         : 1.5px solid var(--c-border);
+  background     : var(--c-surf);
+  color          : var(--c-text);
+  text-decoration: none;
+  cursor         : pointer;
+  transition     : border-color .15s, color .15s, background .15s, box-shadow .15s;
+}
+.btn:hover {
+  border-color : var(--c-accent);
+  color        : var(--c-accent);
+  box-shadow   : 0 0 0 3px color-mix(in srgb, var(--c-accent) 12%, transparent);
+  border-bottom: 1.5px solid var(--c-accent);
+}
+
+/* Filled / primary variant */
+.btn--primary {
+  background   : var(--c-accent);
+  border-color : var(--c-accent);
+  color        : #fff;
+}
+.btn--primary:hover {
+  background   : color-mix(in srgb, var(--c-accent) 80%, #000);
+  border-color : color-mix(in srgb, var(--c-accent) 80%, #000);
+  color        : #fff;
+  box-shadow   : 0 0 0 3px color-mix(in srgb, var(--c-accent) 20%, transparent);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 7 · HERO FIGURE
+ * Dot-grid placeholder; swap .hero-ph for .hero-img when ready.
+ * ══════════════════════════════════════════════════════════════ */
+
+/* Placeholder version — remove this once you have a real figure */
+.hero-ph {
+  width            : 100%;
+  min-height       : 210px;
+  background-color : var(--c-surf2);
+  background-image : radial-gradient(circle, var(--c-dot) 1px, transparent 1px);
+  background-size  : 22px 22px;
+  border           : 1px solid var(--c-border);
+  border-radius    : var(--r-lg);
+  display          : flex;
+  flex-direction   : column;
+  align-items      : center;
+  justify-content  : center;
+  gap              : 6px;
+  margin           : 26px 0 8px;
+  padding          : 48px 20px;
+  text-align       : center;
+}
+.hero-ph__label {
+  font-size      : var(--text-xs);
+  font-weight    : 700;
+  text-transform : uppercase;
+  letter-spacing : .10em;
+  color          : var(--c-accent);
+}
+.hero-ph__hint {
+  font-size  : var(--text-sm);
+  color      : var(--c-muted);
+  font-style : italic;
+}
+
+/* Real figure version — add class="hero-img" to your <img> tag */
+.hero-img {
+  width         : 100%;
+  border-radius : var(--r-lg);
+  border        : 1px solid var(--c-border);
+  margin        : 26px 0 8px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 8 · TL;DR BLOCK
+ * Left-accented paragraph at the top of the page.
+ * Change --c-accent to restyle the left bar colour.
+ * ══════════════════════════════════════════════════════════════ */
+
+.tldr {
+  font-size    : var(--text-lg);
+  font-weight  : 500;
+  line-height  : 1.65;
+  color        : var(--c-head);
+  border-left  : 3px solid var(--c-accent);
+  padding-left : 15px;
+  margin       : 26px 0 30px;
+}
+.tldr strong { color: var(--c-accent); font-weight: 700; }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 9 · STAT STRIP
+ * 4-column grid of key numbers. Cells share a 1-px border gap.
+ * Add/remove <div class="stat"> blocks inside .stats to resize.
+ * ══════════════════════════════════════════════════════════════ */
+
+.stats {
+  display              : grid;
+  grid-template-columns: repeat(4, 1fr);
+  border               : 1px solid var(--c-border);
+  border-radius        : var(--r-lg);
+  overflow             : hidden;
+  margin-bottom        : 8px;
+  background           : var(--c-border);   /* gap colour */
+  gap                  : 1px;
+}
+
+.stat {
+  background : var(--c-surf);
+  padding    : 16px 15px 14px;
+}
+.stat__val {
+  font-size      : var(--text-stat);
+  font-weight    : 700;
+  letter-spacing : -.02em;
+  color          : var(--c-accent);
+  line-height    : 1;
+  margin-bottom  : 5px;
+}
+.stat__name {
+  font-size     : var(--text-sm);
+  font-weight   : 600;
+  color         : var(--c-head);
+  margin-bottom : 3px;
+}
+.stat__desc {
+  font-size   : 12px;
+  color       : var(--c-muted);
+  line-height : 1.45;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 10 · SECTION HEADINGS
+ * h2: small uppercase label with a coloured left-bar.
+ * h3: smaller sub-label, no bar.
+ * ══════════════════════════════════════════════════════════════ */
+
+h2.section-label {
+  display        : flex;
+  align-items    : center;
+  gap            : 9px;
+  font-size      : var(--text-h2);
+  font-weight    : 700;
+  text-transform : uppercase;
+  letter-spacing : .09em;
+  color          : var(--c-muted);
+  margin         : 52px 0 18px;
+}
+/* Coloured left bar — change colour via --c-accent */
+h2.section-label::before {
+  content       : '';
+  display       : inline-block;
+  width         : 3px;
+  height        : 14px;
+  background    : var(--c-accent);
+  border-radius : 2px;
+  flex-shrink   : 0;
+}
+
+h3.sub-label {
+  font-size      : 12px;
+  font-weight    : 600;
+  text-transform : uppercase;
+  letter-spacing : .07em;
+  color          : var(--c-subtle);
+  margin         : 30px 0 12px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 11 · PROSE CONTENT
+ * Body paragraphs, inline links.
+ * ══════════════════════════════════════════════════════════════ */
+
+.prose p {
+  margin-bottom : 14px;
+  color         : var(--c-text);
+}
+.prose p:last-child { margin-bottom: 0; }
+
+/* Standalone paragraphs outside .prose */
+p { margin-bottom: 14px; }
+p:last-child { margin-bottom: 0; }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 12 · EQUATION BLOCK
+ * Centred, surfaced container for display-math equations.
+ * Wrap your $$ ... $$ in <div class="eq-block">.
+ * ══════════════════════════════════════════════════════════════ */
+
+.eq-block {
+  background    : var(--c-surf);
+  border        : 1px solid var(--c-border);
+  border-radius : var(--r-md);
+  padding       : 18px 22px;
+  margin        : 18px 0;
+  text-align    : center;
+  overflow-x    : auto;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 13 · THEOREM / HIGHLIGHT BLOCK
+ * Two variants:
+ *   .thm-block   — tinted background, for theorems/lemmas
+ *   .hl-block    — left-bar accent, for callouts / key points
+ * ══════════════════════════════════════════════════════════════ */
+
+/* Theorem block */
+.thm-block {
+  background    : var(--c-surf2);
+  border        : 1px solid var(--c-border);
+  border-radius : var(--r-md);
+  padding       : 16px 20px;
+  margin        : 18px 0;
+  font-size     : var(--text-base);
+  line-height   : 1.68;
+}
+.thm-block__label {
+  font-size      : var(--text-xs);
+  font-weight    : 700;
+  text-transform : uppercase;
+  letter-spacing : .08em;
+  color          : var(--c-accent);
+  margin-bottom  : 7px;
+}
+
+/* Highlight / callout block */
+.hl-block {
+  border-left   : 3px solid var(--c-accent);
+  border-radius : 0 var(--r-md) var(--r-md) 0;
+  background    : var(--c-surf2);
+  padding       : 14px 18px;
+  margin        : 18px 0;
+  font-size     : var(--text-base);
+  line-height   : 1.68;
+  color         : var(--c-text);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 14 · FIGURE WRAPPERS & PLACEHOLDERS
+ * ══════════════════════════════════════════════════════════════ */
+
+/* Placeholder — dashed box used before real figures are ready */
+.fig-ph {
+  width         : 100%;
+  background    : var(--c-surf);
+  border        : 1.5px dashed var(--c-border);
+  border-radius : var(--r-lg);
+  display       : flex;
+  align-items   : center;
+  justify-content: center;
+  color         : var(--c-subtle);
+  font-size     : var(--text-sm);
+  font-style    : italic;
+  padding       : 52px 20px;
+  margin        : 18px 0 8px;
+  text-align    : center;
+}
+/* Taller placeholder variant — add class="fig-ph fig-ph--tall" */
+.fig-ph--tall { padding: 72px 20px; }
+
+/* Real figure image — add class="fig-img" to <img> elements */
+.fig-img {
+  width         : 100%;
+  border-radius : var(--r-lg);
+  border        : 1px solid var(--c-border);
+  margin        : 18px 0 8px;
+}
+
+figcaption {
+  font-size     : var(--text-sm);
+  color         : var(--c-muted);
+  line-height   : 1.55;
+  margin-bottom : 26px;
+}
+figcaption strong { color: var(--c-text); }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 15 · CODE / CITATION BLOCK
+ * ══════════════════════════════════════════════════════════════ */
+
+pre, code {
+  font-family : var(--font-mono);
+}
+
+pre {
+  background    : var(--c-surf);
+  border        : 1px solid var(--c-border);
+  border-radius : var(--r-lg);
+  padding       : 18px 20px;
+  font-size     : var(--text-sm);
+  line-height   : 1.65;
+  overflow-x    : auto;
+  white-space   : pre;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 16 · BLOG-SPECIFIC ELEMENTS
+ * ══════════════════════════════════════════════════════════════ */
+
+/* Post metadata row */
+.post-meta {
+  display     : flex;
+  flex-wrap   : wrap;
+  gap         : 14px;
+  font-size   : var(--text-sm);
+  color       : var(--c-subtle);
+  margin-bottom: 26px;
+  align-items : center;
+}
+.post-meta i { font-size: 11px; margin-right: 3px; }
+
+/* Section headings inside blog posts */
+h2.blog-h2 {
+  font-size      : 17px;
+  font-weight    : 700;
+  letter-spacing : -.01em;
+  color          : var(--c-head);
+  margin         : 38px 0 12px;
+}
+h2.blog-h2:first-of-type { margin-top: 0; }
+
+/* Placeholder content block (blog draft sections) */
+.ph-block {
+  background    : var(--c-surf);
+  border        : 1.5px dashed var(--c-border);
+  border-radius : var(--r-md);
+  padding       : 24px 20px;
+  margin        : 14px 0;
+  color         : var(--c-subtle);
+  font-size     : var(--text-sm);
+  font-style    : italic;
+  line-height   : 1.65;
+}
+.ph-block strong {
+  display        : block;
+  font-style     : normal;
+  font-weight    : 700;
+  font-size      : var(--text-xs);
+  text-transform : uppercase;
+  letter-spacing : .08em;
+  color          : var(--c-muted);
+  margin-bottom  : 7px;
+}
+
+/* Dot-grid figure placeholder (blog variant) */
+.fig-ph--dotgrid {
+  background-color  : var(--c-surf);
+  background-image  : radial-gradient(circle, var(--c-dot) 1px, transparent 1px);
+  background-size   : 20px 20px;
+  border            : 1px solid var(--c-border);
+}
+
+/* Back-to-paper CTA at bottom of blog */
+.back-cta {
+  display        : inline-flex;
+  align-items    : center;
+  gap            : 7px;
+  font-size      : var(--text-sm);
+  font-weight    : 600;
+  color          : var(--c-accent);
+  border         : 1.5px solid var(--c-accent);
+  border-radius  : var(--r-sm);
+  padding        : 8px 16px;
+  margin-top     : 30px;
+  text-decoration: none;
+  transition     : background .15s, color .15s;
+}
+.back-cta:hover {
+  background   : var(--c-accent);
+  color        : #fff;
+  border-color : var(--c-accent);
+  border-bottom: 1.5px solid var(--c-accent);
+}
+
+/* Horizontal rule */
+hr {
+  border     : none;
+  border-top : 1px solid var(--c-border);
+  margin     : 28px 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 17 · FOOTER
+ * ══════════════════════════════════════════════════════════════ */
+
+.site-footer {
+  margin-top    : 64px;
+  padding-top   : 20px;
+  border-top    : 1px solid var(--c-border);
+  font-size     : var(--text-sm);
+  color         : var(--c-subtle);
+}
+.site-footer a {
+  color       : var(--c-subtle);
+  border      : none;
+  transition  : color .15s;
+}
+.site-footer a:hover { color: var(--c-accent); }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 18 · APPEAR ANIMATIONS
+ * Elements with class="ap" fade in when scrolled into view.
+ * JavaScript (bottom of each HTML file) drives this via
+ * IntersectionObserver. Delay is set programmatically.
+ * ══════════════════════════════════════════════════════════════ */
+
+.ap {
+  opacity    : 0;
+  transition : opacity .5s ease;
+}
+.ap.in { opacity: 1; }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 19 · RESPONSIVE
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (≤ 720px) ── */
+@media (max-width: 720px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+
+  .page { padding-left: 28px; padding-right: 28px; }
+}
+
+/* ── Large phone (≤ 540px) ── */
+@media (max-width: 540px) {
+  .page        { padding-left: var(--page-pad-sm); padding-right: var(--page-pad-sm); }
+  .site-title  { font-size: 21px; }
+  .tldr        { font-size: var(--text-base); }
+
+  .btns        { gap: 7px; }
+  /* let buttons wrap naturally — no forced column */
+}
+
+/* ── Phone (≤ 420px) ── */
+@media (max-width: 420px) {
+  .stats { grid-template-columns: 1fr; }
+  .site-title { font-size: 19px; }
+  .stat__val  { font-size: 20px; }
+}

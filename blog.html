@@ -1,354 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>TRIRL Explained: Bridging Classical and Adversarial IRL | Blog</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A high-level explainer on Trust Region Inverse Reinforcement Learning (TRIRL) — why adversarial IRL is unstable, what classical IRL gets right, and how TRIRL bridges the gap.">
+  <title>TRIRL Explained | Blog</title>
+  <meta name="description"
+        content="A high-level explainer on Trust Region Inverse Reinforcement Learning — why adversarial IRL is unstable, what classical IRL gets right, and how TRIRL bridges the gap.">
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="article">
-  <meta property="og:title" content="TRIRL Explained: Bridging Classical and Adversarial IRL">
-  <meta property="og:description" content="Why adversarial IRL is unstable, what classical IRL gets right, and how TRIRL bridges the gap — without a full RL inner loop.">
+  <meta property="og:type"        content="article">
+  <meta property="og:title"       content="TRIRL Explained: Bridging Classical and Adversarial IRL">
+  <meta property="og:description" content="Why adversarial IRL is unstable, what classical IRL gets right, and how TRIRL bridges the gap without a full RL inner loop.">
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TRIRL Explained: Bridging Classical and Adversarial IRL">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="TRIRL Explained: Bridging Classical and Adversarial IRL">
   <meta name="twitter:description" content="A high-level explainer on Trust Region Inverse Reinforcement Learning.">
 
+  <!-- FONT — keep in sync with index.html and style.css -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+        rel="stylesheet">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <style>
-    :root {
-      --bg:       #f5f7fd;
-      --surf:     #ffffff;
-      --surf2:    #edf2fc;
-      --text:     #18181b;
-      --head:     #0d0e14;
-      --accent:   #1d6fe8;
-      --muted:    #556070;
-      --subtle:   #8a9cb0;
-      --border:   #dce4ef;
-      --bdark:    #c4cfdf;
-    }
-    body.dark {
-      --bg:       #0a0c12;
-      --surf:     #10131d;
-      --surf2:    #141828;
-      --text:     #d3dae6;
-      --head:     #edf2f7;
-      --accent:   #5ba3f5;
-      --muted:    #7a8fa8;
-      --subtle:   #475669;
-      --border:   #1d2433;
-      --bdark:    #273040;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      font-size: 14px;
-      line-height: 1.75;
-      color: var(--text);
-      background: var(--bg);
-      -webkit-font-smoothing: antialiased;
-      transition: background .3s, color .3s;
-    }
-
-    /* ── layout ── */
-    .page {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 44px 36px 88px;
-    }
-
-    /* ── nav ── */
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 36px;
-    }
-    .back { font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s; }
-    .back:hover { color: var(--accent); }
-    .theme-btn {
-      background: none; border: none; cursor: pointer;
-      font-size: 15px; color: var(--subtle); padding: 2px; transition: color .2s;
-    }
-    .theme-btn:hover { color: var(--head); }
-
-    /* ── post meta ── */
-    .post-tag {
-      display: inline-block;
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: var(--accent); background: var(--surf2);
-      border: 1px solid var(--border);
-      border-radius: 3px; padding: 3px 9px;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: 22px; font-weight: 700;
-      letter-spacing: -.02em; line-height: 1.25;
-      color: var(--head); margin-bottom: 14px;
-    }
-
-    .post-meta {
-      display: flex; flex-wrap: wrap; gap: 14px;
-      font-size: 12px; color: var(--subtle);
-      margin-bottom: 28px; align-items: center;
-    }
-    .post-meta span { display: flex; align-items: center; gap: 5px; }
-    .post-meta i { font-size: 11px; }
-
-    /* ── rule ── */
-    hr {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 28px 0;
-    }
-
-    /* ── content ── */
-    h2 {
-      font-size: 16px; font-weight: 700;
-      letter-spacing: -.01em;
-      color: var(--head); margin: 36px 0 10px;
-    }
-    h2:first-of-type { margin-top: 0; }
-
-    p { margin-bottom: 14px; }
-    p:last-child { margin-bottom: 0; }
-
-    a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--border); transition: border-color .15s; }
-    a:hover { border-bottom-color: var(--accent); }
-
-    /* ── placeholder section ── */
-    .ph-block {
-      background: var(--surf);
-      border: 1.5px dashed var(--border);
-      border-radius: 7px;
-      padding: 28px 22px;
-      margin: 16px 0;
-      color: var(--subtle);
-      font-size: 13px;
-      font-style: italic;
-      line-height: 1.6;
-    }
-    .ph-block strong {
-      display: block;
-      font-style: normal;
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    /* ── figure placeholder ── */
-    .fig-ph {
-      width: 100%;
-      background: var(--surf);
-      background-image: radial-gradient(circle, var(--bdark) 1px, transparent 1px);
-      background-size: 20px 20px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--subtle); font-size: 12px; font-style: italic;
-      padding: 48px 20px; margin: 20px 0 8px;
-      text-align: center;
-    }
-    figcaption { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 20px; }
-
-    /* ── callout ── */
-    .callout {
-      border-left: 3px solid var(--accent);
-      padding: 12px 16px;
-      margin: 18px 0;
-      background: var(--surf2);
-      border-radius: 0 6px 6px 0;
-      font-size: 13.5px;
-      line-height: 1.65;
-      color: var(--text);
-    }
-
-    /* ── back-to-paper ── */
-    .back-cta {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 13px; font-weight: 600;
-      color: var(--accent); text-decoration: none;
-      border: 1.5px solid var(--accent); border-radius: 5px;
-      padding: 8px 16px; margin-top: 32px;
-      transition: background .15s, color .15s;
-    }
-    .back-cta:hover { background: var(--accent); color: #fff; border-bottom: none; }
-
-    /* ── footer ── */
-    footer {
-      margin-top: 56px; padding-top: 18px;
-      border-top: 1px solid var(--border);
-      font-size: 12px; color: var(--subtle);
-    }
-
-    /* ── appear animation ── */
-    .ap { opacity: 0; transition: opacity .5s ease; }
-    .ap.in { opacity: 1; }
-
-    @media (max-width: 600px) {
-      .page { padding: 32px 18px 60px; }
-      h1 { font-size: 19px; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="page page--blog">
 
-<div class="page">
 
-  <!-- nav -->
-  <nav class="ap">
-    <a href="index.html" class="back">← Back to paper</a>
-    <button id="tbtn" class="theme-btn" aria-label="Toggle dark mode">
+  <!-- ═══════════════════════════════════════════════════════
+       NAVIGATION BAR
+       ═══════════════════════════════════════════════════════ -->
+  <nav class="site-nav ap">
+    <a href="index.html" class="nav-back">← Back to paper</a>
+    <button id="theme-btn" class="theme-btn" aria-label="Toggle dark mode">
       <i class="fas fa-moon"></i>
     </button>
   </nav>
 
-  <!-- post header -->
-  <div class="ap"><span class="post-tag">Blog post</span></div>
 
-  <h1 class="ap">TRIRL Explained: Bridging Classical and Adversarial Inverse Reinforcement Learning</h1>
+  <!-- ═══════════════════════════════════════════════════════
+       POST HEADER
+       · venue-tag  — reused as "Blog post" badge
+       · site-title — post title
+       · post-meta  — author, date, reading time
+       ═══════════════════════════════════════════════════════ -->
+  <div class="ap">
+    <span class="venue-tag">Blog post</span>
+  </div>
+
+  <h1 class="site-title ap">
+    TRIRL Explained: Bridging Classical and Adversarial
+    Inverse Reinforcement Learning
+  </h1>
 
   <div class="post-meta ap">
     <span><i class="fas fa-user"></i> Anish Diwan</span>
-    <span><i class="fas fa-calendar"></i> [DATE PLACEHOLDER]</span>
+    <span><i class="fas fa-calendar"></i> [DATE — e.g. July 2026]</span>
     <span><i class="fas fa-clock"></i> ~8 min read</span>
   </div>
 
   <hr class="ap">
 
-  <!-- ── Intro ── -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       BLOG CONTENT
+       Each section below is a placeholder.
+       · Replace <div class="ph-block"> with real paragraphs.
+       · Replace <div class="fig-ph"> with <img class="fig-img">.
+       · Use <div class="hl-block"> for key callouts.
+       · Use <div class="thm-block"> for formal statements.
+       ═══════════════════════════════════════════════════════ -->
   <div class="ap">
 
+    <!-- ── Introduction ── -->
     <div class="ph-block">
       <strong>Introduction — placeholder</strong>
-      A short hook explaining why teaching robots to imitate human behavior is hard. Set up the tension between "we want the robot to understand <em>why</em> the expert does what it does" (reward learning) versus "let's just copy the actions directly" (behavioral cloning). Introduce IRL as the right framing — and immediately raise the question: why isn't it used more?
+      A short hook on why teaching robots to imitate human behaviour is hard.
+      Set up the tension between reward learning (understanding <em>why</em>
+      the expert acts) and behavioural cloning (copying actions). Introduce IRL
+      as the principled framing — then immediately raise the question: why isn't
+      it the default?
     </div>
+
 
     <!-- ── Section 1 ── -->
-    <h2>1. What is Inverse Reinforcement Learning?</h2>
+    <h2 class="blog-h2">1. What is Inverse Reinforcement Learning?</h2>
 
     <div class="ph-block">
-      Explain IRL at a high level: given expert demonstrations, recover the underlying reward function that explains the behavior. Contrast with behavioral cloning (supervised learning on actions) and direct imitation. Use an intuitive analogy — e.g., learning the rules of chess from watching grandmaster games, rather than just memorizing their moves.
+      Explain IRL at a high level: given expert demonstrations, recover the
+      underlying reward function. Use an intuitive analogy — e.g., learning the
+      rules of chess from watching grandmaster games rather than memorising moves.
+      Contrast with behavioural cloning and why IRL generalises better.
     </div>
 
     <figure>
-      <div class="fig-ph">[Illustration: IRL vs. Behavioral Cloning vs. RL from scratch]</div>
-      <figcaption>IRL recovers the reward function — enabling generalization to new scenarios.</figcaption>
+      <div class="fig-ph fig-ph--dotgrid ap">
+        [Illustration: IRL vs. Behavioural Cloning vs. RL from scratch]
+      </div>
+      <figcaption class="ap">
+        IRL recovers the reward function — enabling generalization to new scenarios.
+      </figcaption>
     </figure>
+
 
     <!-- ── Section 2 ── -->
-    <h2>2. The Classical Approach: What Works (and What Doesn't)</h2>
+    <h2 class="blog-h2">2. The Classical Approach — What Works and What Doesn't</h2>
 
     <div class="ph-block">
-      Introduce Max Causal Entropy IRL (MCE-IRL). Explain the key guarantee: monotonic improvement of the imitation objective. Then explain the critical limitation: to compute the reward gradient, you need the optimal policy for the current reward — which requires running RL to convergence. In high-dimensional environments, this is prohibitively expensive.
+      Introduce Max Causal Entropy IRL (MCE-IRL). Explain the key guarantee:
+      monotonic improvement of the imitation objective at every iteration.
+      Then explain the critical limitation: to compute the reward gradient, you
+      need the optimal policy for the current reward — which requires running RL
+      to convergence. In high-dimensional environments, this is prohibitively expensive.
     </div>
 
-    <div class="callout">
-      <strong>The core tension:</strong> Classical IRL has strong guarantees but requires solving a full RL problem each iteration. This is too expensive for real-world tasks.
+    <div class="hl-block ap">
+      <strong>The core tension:</strong> Classical IRL has strong guarantees but
+      requires solving a full RL problem each iteration — too expensive for real-world tasks.
     </div>
+
 
     <!-- ── Section 3 ── -->
-    <h2>3. The Modern Fix: Adversarial IRL</h2>
+    <h2 class="blog-h2">3. The Modern Fix — Adversarial IRL</h2>
 
     <div class="ph-block">
-      Explain how GAIL and variants (AIRL, AMP, LSIQ) reformulate the MCE-IRL problem as a two-player min-max game. The discriminator provides local rewards; the policy takes a few gradient steps. This is cheap — but why is it so unstable and sensitive? Trace the instability back to two root causes: (1) the reward is local and changes every step; (2) the policy is never truly optimal for any reward.
+      Explain how GAIL and variants (AIRL, AMP, LSIQ) reformulate MCE-IRL as a
+      two-player min-max game. The discriminator provides local rewards; the policy
+      takes a few gradient steps. This is cheap — but why is it so unstable?
+      Trace the instability to two root causes: (1) the reward is local and changes
+      every step; (2) the policy is never truly optimal for any reward.
     </div>
 
     <figure>
-      <div class="fig-ph">[Illustration: Adversarial IRL training instability vs. TRIRL stability curves]</div>
-      <figcaption>Training curves: adversarial methods vs. TRIRL. TRIRL converges reliably without oscillation.</figcaption>
+      <div class="fig-ph fig-ph--dotgrid ap">
+        [Illustration: adversarial IRL training instability vs. TRIRL stability]
+      </div>
+      <figcaption class="ap">
+        Training curves: adversarial methods vs. TRIRL.
+        TRIRL converges reliably without oscillation.
+      </figcaption>
     </figure>
+
 
     <!-- ── Section 4 ── -->
-    <h2>4. TRIRL: The Key Idea</h2>
+    <h2 class="blog-h2">4. TRIRL — The Key Idea</h2>
 
     <div class="ph-block">
-      Present the main insight clearly and intuitively. The question TRIRL asks: <em>if we can only afford a local policy update (a trust-region step), what reward update is consistent with that?</em> Answer: a smaller step in the same direction — but on a corrected reward. Walk through the intuition with a simple picture: the trust-region policy is locally optimal for a big reward step, but globally optimal for a small corrected step. This means you get the MCE guarantee without running RL to convergence.
+      Present the main insight clearly. The question TRIRL asks: if we can only
+      afford a local policy update (a trust-region step), what reward update is
+      consistent with that? Answer: a smaller step in the same direction — on a
+      corrected reward. Walk through the intuition: the trust-region policy is
+      locally optimal for a big reward step, but globally optimal for a small
+      corrected step. This means you get the MCE guarantee without running RL
+      to convergence.
     </div>
 
-    <div class="callout">
-      Run a cheap trust-region policy update → read off the Lagrange multiplier η → shrink the reward step by 1/(1+η). The resulting pair is exactly MCE-valid.
+    <div class="hl-block ap">
+      Run a cheap trust-region policy update → read off the Lagrange multiplier
+      $\eta$ → shrink the reward step by $1/(1+\eta)$. The resulting pair is
+      exactly MCE-valid.
     </div>
 
     <div class="ph-block">
-      Describe the discriminator buffer: because we update the reward in function space (not parameter space), the reward depends on all past discriminators. TRIRL maintains a small buffer of the k most recent ones, with a fitted parametric reward for older history. This keeps memory bounded while preserving update accuracy.
+      Describe the discriminator buffer: because rewards are updated in function
+      space, TRIRL maintains a small buffer of the $k$ most recent discriminators
+      plus a fitted parametric reward for older history. This keeps memory bounded
+      while preserving update accuracy.
     </div>
+
 
     <!-- ── Section 5 ── -->
-    <h2>5. Does it Actually Work?</h2>
+    <h2 class="blog-h2">5. Does it Actually Work?</h2>
 
     <div class="ph-block">
-      Walk through the experimental results at a high level. Highlight the 2.4× IQM improvement in aggregate. Pick two or three illustrative tasks and explain why TRIRL does better — e.g., on the G1 humanoid (hard task, only observations available), where discriminator accuracy is critical. Connect back to theory: unlike adversarial methods, TRIRL benefits from a more accurate discriminator rather than being destabilized by it.
+      Walk through the experimental results at a high level. Highlight the 2.4×
+      IQM improvement. Pick two or three illustrative tasks and explain why TRIRL
+      does better — e.g., on the G1 humanoid, where discriminator accuracy is
+      critical. Connect back to theory: unlike adversarial methods, TRIRL
+      <em>benefits</em> from a more accurate discriminator rather than being
+      destabilised by it.
     </div>
 
     <figure>
-      <div class="fig-ph">[Figure: Key results — TRIRL vs. baselines on selected tasks]</div>
-      <figcaption>Selected results from the paper. TRIRL is the only method that consistently converges across all tasks.</figcaption>
+      <div class="fig-ph fig-ph--dotgrid ap">
+        [Figure: key results — TRIRL vs. baselines on selected tasks]
+      </div>
+      <figcaption class="ap">
+        Selected results. TRIRL is the only method that consistently converges
+        across all tasks.
+      </figcaption>
     </figure>
 
+
     <!-- ── Section 6 ── -->
-    <h2>6. Global Rewards — a Bonus</h2>
+    <h2 class="blog-h2">6. Global Rewards — a Bonus</h2>
 
     <div class="ph-block">
-      Explain what "global reward" means and why it matters: a reward that can be optimized from scratch with a new random agent, and that transfers to environments with changed dynamics. Contrast with GAIL/AIRL where the reward is entangled with the training policy. Show an intuitive example: re-training TRIRL's reward on Ant with disabled legs still gives a meaningful locomotion reward.
+      Explain what "global reward" means and why it matters: a reward that can be
+      re-optimized from scratch with a new random agent, and that transfers to
+      environments with changed dynamics. Contrast with GAIL/AIRL where the reward
+      is entangled with the training policy. Show an example: re-training TRIRL's
+      reward on Ant with disabled legs still gives a meaningful locomotion reward.
     </div>
+
 
     <!-- ── Section 7 ── -->
-    <h2>7. Takeaways</h2>
+    <h2 class="blog-h2">7. Takeaways</h2>
 
     <div class="ph-block">
-      Summarize the three key takeaways:
-      (1) The gap between classical and adversarial IRL is not fundamental — it can be bridged with trust-region correction.
+      Summarise the three key takeaways:
+      (1) The gap between classical and adversarial IRL is not fundamental — it
+          can be bridged with trust-region correction.
       (2) You don't need to sacrifice stability for efficiency.
-      (3) Reward functions that are globally optimizable and transferable are achievable with the right formulation.
-      End with a forward-looking note on extensions (f-divergences, more general dynamics, real robot deployment).
+      (3) Reward functions that are globally optimizable and transferable are
+          achievable with the right formulation.
+      End with a forward-looking note on extensions (f-divergences, more general
+      dynamics, real-robot deployment).
     </div>
 
-  </div><!-- /ap -->
+  </div><!-- /blog content -->
 
+
+  <!-- ═══════════════════════════════════════════════════════
+       FOOTER + BACK LINK
+       ═══════════════════════════════════════════════════════ -->
   <hr class="ap">
 
   <a href="index.html" class="back-cta ap">
-    <i class="fas fa-arrow-left"></i> Read the paper
+    <i class="fas fa-arrow-left"></i> Back to the paper
   </a>
 
-  <footer class="ap">
-    <p>Anish Diwan &middot; <a href="mailto:anish.diwan@robot-learning.de">anish.diwan@robot-learning.de</a></p>
+  <footer class="site-footer ap">
+    <p>
+      Anish Diwan &middot;
+      <a href="mailto:anish.diwan@robot-learning.de">anish.diwan@robot-learning.de</a>
+    </p>
   </footer>
 
-</div>
+
+</div><!-- /page -->
 
 <script>
   const io = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
   }, { threshold: 0.05 });
   document.querySelectorAll('.ap').forEach((el, i) => {
     el.style.transitionDelay = `${Math.min(i * 0.04, 0.22)}s`;
     io.observe(el);
   });
 
-  const btn = document.getElementById('tbtn');
-  const ico = btn.querySelector('i');
+  const btn  = document.getElementById('theme-btn');
+  const icon = btn.querySelector('i');
   if (localStorage.getItem('trirl-theme') === 'dark') {
-    document.body.classList.add('dark'); ico.className = 'fas fa-sun';
+    document.body.classList.add('dark');
+    icon.className = 'fas fa-sun';
   }
   btn.addEventListener('click', () => {
-    const on = document.body.classList.toggle('dark');
-    localStorage.setItem('trirl-theme', on ? 'dark' : 'light');
-    ico.className = on ? 'fas fa-sun' : 'fas fa-moon';
+    const dark = document.body.classList.toggle('dark');
+    localStorage.setItem('trirl-theme', dark ? 'dark' : 'light');
+    icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
   });
 </script>
 
