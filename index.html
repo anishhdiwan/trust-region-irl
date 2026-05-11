@@ -3,37 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trust Region Inverse Reinforcement Learning | ICML 2026</title>
+  <title>Trust Region Inverse Reinforcement Learning: Explicit Dual Ascent using Local Policy Updates | ICML 2026</title>
 
   <!-- ═══════════════════════════════════════════════════════
        SEO & SOCIAL SHARING — update these for your paper
        ═══════════════════════════════════════════════════════ -->
   <meta name="description"
-        content="TRIRL: Trust Region Inverse Reinforcement Learning — monotonic IRL without a full RL inner loop. 2.4× IQM over GAIL, AIRL, AMP, LSIQ, NEAR. ICML 2026.">
+        content="TRIRL: Trust Region Inverse Reinforcement Learning: Explicit Dual Ascent using Local Policy Updates. ICML 2026. TLDR: An inverse RL method with monotonic performance improvement and global reward learning that outperforms state-of-the-art IL methods. Based on explicit optimization of the IRL Lagrangian dual using local policy updates and a reward correction step.">
   <meta name="keywords"
         content="Inverse Reinforcement Learning, Trust Region, Imitation Learning, Reward Learning, TRIRL, ICML 2026, Robotics">
   <meta name="author"
-        content="Anish Diwan, Davide Tateo, Christopher E. Mower, Haitham Bou Ammar, Jan Peters, Oleg Arenz">
+        content="Anish Diwan, Davide Tateo, Christopher E. Mower, Haitham Bou-Ammar, Jan Peters, Oleg Arenz">
+
+  <link rel="icon" href="static/figures/favicon.png" type="image/svg+xml">
+  <link rel="alternate icon" href="static/figures/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="static/figures/apple-touch-icon.png">
+
   <link rel="canonical" href="https://[GITHUB_USERNAME].github.io/trust-region-irl/">
 
   <meta property="og:type"        content="article">
-  <meta property="og:title"       content="Trust Region Inverse Reinforcement Learning | ICML 2026">
-  <meta property="og:description" content="Monotonic IRL without full RL inner loops. 2.4× IQM. Global, transferable reward functions.">
+  <meta property="og:title"       content="Trust Region Inverse Reinforcement Learning: Explicit Dual Ascent using Local Policy Updates | ICML 2026">
+  <meta property="og:description" content="Explicit optimization of the IRL Lagrangian dual using local policy updates and a reward correction step.">
   <meta property="og:url"         content="https://[GITHUB_USERNAME].github.io/trust-region-irl/">
   <meta property="og:image"       content="https://[GITHUB_USERNAME].github.io/trust-region-irl/static/og.png">
 
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="Trust Region Inverse Reinforcement Learning | ICML 2026">
-  <meta name="twitter:description" content="Monotonic IRL without full RL inner loops. 2.4× IQM over GAIL, AIRL, AMP, LSIQ, NEAR. ICML 2026.">
+  <meta name="twitter:title"       content="Trust Region Inverse Reinforcement Learning: Explicit Dual Ascent using Local Policy Updates | ICML 2026">
+  <meta name="twitter:description" content="An inverse RL method with monotonic performance improvement and global reward learning that outperforms state-of-the-art IL methods. Based on explicit optimization of the IRL Lagrangian dual using local policy updates and a reward correction step. ICML 2026">
 
-  <!-- ═══════════════════════════════════════════════════════
-       FONT — to change:
-         1. Replace the URL below with your chosen Google Font
-            e.g. https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700
-         2. Update --font-body in style.css (Section 1 · Config)
-       ═══════════════════════════════════════════════════════ -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
         rel="stylesheet">
 
   <!-- Icons -->
@@ -43,9 +43,25 @@
   <!-- Site styles — all config lives at the top of this file -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- MathJax for equations -->
-  <script>MathJax = { tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] } };</script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+    <!-- math rendering -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          macros: {
+            nicefrac: ['{}^{#1}\\!/\\!{}_{#2}', 2]
+          }
+        }
+      };
+    </script>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+  <!-- 100% privacy-first analytics -->
+  <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+
 </head>
 <body>
 <div class="page">
@@ -69,22 +85,67 @@
        · authors     — author names
        · affils      — affiliations line
        ═══════════════════════════════════════════════════════ -->
-  <div class="ap">
-    <span class="venue-tag">ICML 2026</span>
+  <span class="venue-tag" aria-label="ICML 2026">
+    <img src="static/figures/ICML-logo.svg" alt="ICML" class="venue-tag__logo">
+    <span class="venue-tag__meta">2026</span>
+  </span>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       LOGOS
+       ═══════════════════════════════════════════════════════ -->
+  <div class="affil-logos ap" aria-label="Affiliated institutes">
+    <span class="affil-logo-pair" style="--logo-w:52px;">
+      <img src="static/figures/ias_logo_dark.svg" alt="Intelligent Autonomous Systems Group" class="affil-logo affil-logo--light">
+      <img src="static/figures/ias_logo_light.svg" alt="Intelligent Autonomous Systems Group" class="affil-logo affil-logo--dark">
+    </span>
+
+    <span class="affil-logo-pair" style="--logo-w:96px;">
+      <img src="static/figures/tuda_logo_dark.svg" alt="Technical University of Darmstadt" class="affil-logo affil-logo--light">
+      <img src="static/figures/tuda_logo_light.svg" alt="Technical University of Darmstadt" class="affil-logo affil-logo--dark">
+    </span>
+
+    <span class="affil-logo-pair" style="--logo-w:48px;">
+      <img src="static/figures/lund_logo_dark.svg" alt="Lund University" class="affil-logo affil-logo--light">
+      <img src="static/figures/lund_logo_light.svg" alt="Lund University" class="affil-logo affil-logo--dark">
+    </span>
+
+    <span class="affil-logo-pair" style="--logo-w:42px;">
+      <img src="static/figures/huawei_logo_dark.svg" alt="Huawei Noah's Ark Lab" class="affil-logo affil-logo--light">
+      <img src="static/figures/huawei_logo_light.svg" alt="Huawei Noah's Ark Lab" class="affil-logo affil-logo--dark">
+    </span>
+
+    <span class="affil-logo-pair" style="--logo-w:96px;">
+      <img src="static/figures/hessian_AI_logo_dark.svg" alt="hessian.AI" class="affil-logo affil-logo--light">
+      <img src="static/figures/hessian_AI_logo_light.svg" alt="hessian.AI" class="affil-logo affil-logo--dark">
+    </span>
+
+    <span class="affil-logo-pair" style="--logo-w:42px;">
+      <img src="static/figures/dfki_logo_dark.svg" alt="German Research Center for Artificial Intelligence (DFKI)" class="affil-logo affil-logo--light">
+      <img src="static/figures/dfki_logo_light.svg" alt="German Research Center for Artificial Intelligence (DFKI)" class="affil-logo affil-logo--dark">
+    </span>
+
+    <span class="affil-logo-pair" style="--logo-w:72px;">
+      <img src="static/figures/rig_logo_dark.svg" alt="Robotics Institute Germany (RIG)" class="affil-logo affil-logo--light">
+      <img src="static/figures/rig_logo_light.svg" alt="Robotics Institute Germany (RIG)" class="affil-logo affil-logo--dark">
+    </span>
   </div>
 
   <h1 class="site-title ap">
-    <span class="title-accent">Trust Region</span> Inverse Reinforcement Learning
+    <span class="title-accent">Trust Region Inverse Reinforcement Learning</span> : Explicit Dual Ascent using Local Policy Updates
   </h1>
 
   <p class="authors ap">
-    Anish Diwan &middot; Davide Tateo &middot; Christopher E. Mower
-    &middot; Haitham Bou Ammar &middot; Jan Peters &middot; Oleg Arenz
+    <a href="https://anishhdiwan.github.io/">Anish Diwan</a> &middot;
+    <a href="https://www.ias.informatik.tu-darmstadt.de/Team/DavideTateo">Davide Tateo</a> &middot;
+    <a href="https://cmower.github.io/">Christopher E. Mower</a>
+    &middot; <a href="http://bouammar.com/blog/">Haitham Bou Ammar</a>
+    &middot; <a href="https://www.ias.tu-darmstadt.de/Team/JanPeters">Jan Peters</a>
+    &middot; <a href="https://www.ias.informatik.tu-darmstadt.de/Team/OlegArenz">Oleg Arenz</a>
   </p>
 
-  <p class="affils ap">
-    TU Darmstadt &middot; Lund University &middot; Noah's Ark Lab
-    &middot; University College London &middot; Hessian.ai &middot; DFKI &middot; RIG
+  <p class="affils ap">Technical University of Darmstadt &middot; Lund University &middot; Huawei, Noah's Ark Lab
+    &middot; University College London &middot; <br> hessian.AI &middot; German Research Center for AI (DFKI) &middot; Robotics Institute Germany (RIG)
   </p>
 
 
@@ -97,16 +158,27 @@
     <a class="btn btn--primary" href="[PAPER_URL]">
       <i class="fas fa-file-alt"></i> Paper
     </a>
-    <a class="btn" href="[CODE_URL]">
+    <!-- <a class="btn" href="[CODE_URL]">
       <i class="fab fa-github"></i> Code
     </a>
     <a class="btn" href="blog.html">
       <i class="fas fa-pen-nib"></i> Blog
-    </a>
+    </a> -->
     <a class="btn" href="#cite">
       <i class="fas fa-quote-right"></i> Cite
     </a>
   </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       TL;DR
+       Left-accented summary paragraph.
+       Edit the text between the <p class="tldr"> tags.
+       ═══════════════════════════════════════════════════════ -->
+  <p class="tldr ap">
+    <strong>TL;DR</strong>&ensp;We present an inverse RL method that optimizes the IRL Lagrangian dual using local trust-region policy updates and a reward correction step. The key insight is that a trust-region-optimal policy for one reward update can be globally optimal for a smaller update in the same direction, yielding monotonic improvement and global reward learning.
+
+  </p>
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -116,30 +188,21 @@
                 with <img class="hero-img" src="..." alt="...">
        See HOW_TO_EDIT.md → "Replacing the hero figure"
        ═══════════════════════════════════════════════════════ -->
-  <div class="hero-ph ap">
-    <span class="hero-ph__label">Hero Figure</span>
-    <span class="hero-ph__hint">
-      Replace this block with your paper's main figure
-    </span>
-  </div>
-  <p class="ap" style="font-size:12px; color:var(--c-subtle); text-align:center; margin-bottom:0;">
-    Figure 1 — TRIRL vs. MCE-IRL: trust-region update + reward correction for monotonic improvement.
-  </p>
+<div class="hero-img-pair ap" aria-label="TRIRL hero figure">
+  <img
+    class="hero-img hero-img--light"
+    src="static/figures/correction_illustration.svg"
+    alt="TRIRL vs. MCE-IRL: trust-region update and reward correction for monotonic improvement">
 
+  <img
+    class="hero-img hero-img--dark"
+    src="static/figures/correction_illustration_light.svg"
+    alt="TRIRL vs. MCE-IRL: trust-region update and reward correction for monotonic improvement">
+</div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       TL;DR
-       Left-accented summary paragraph.
-       Edit the text between the <p class="tldr"> tags.
-       ═══════════════════════════════════════════════════════ -->
-  <p class="tldr ap">
-    <strong>TL;DR</strong>&ensp;We bridge classical and adversarial IRL — TRIRL
-    achieves monotonic improvement on the IRL objective via trust-region policy
-    updates and reward correction, without ever running a full RL solve per iteration.
-    It outperforms GAIL, AIRL, AMP, LSIQ, NEAR, and SFM by
-    <strong>2.4&times;&thinsp;IQM</strong> while recovering global, transferable
-    reward functions.
-  </p>
+<p class="ap" style="font-size:12px; color:var(--c-subtle); text-align:center; margin-bottom:0;">
+  TRIRL uses cheap, trust-region policy updates and corrects the reward to account for this local policy optimization.
+</p>
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -147,7 +210,7 @@
        4 key numbers displayed as a ruled grid.
        Add/remove <div class="stat"> blocks freely.
        ═══════════════════════════════════════════════════════ -->
-  <div class="stats ap">
+  <!-- <div class="stats ap">
 
     <div class="stat">
       <div class="stat__val">2.4&times;</div>
@@ -173,7 +236,8 @@
       <div class="stat__desc">Rewards generalize across dynamics shifts</div>
     </div>
 
-  </div><!-- /stats -->
+  </div> -->
+  <!-- /stats -->
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -183,27 +247,145 @@
 
   <div class="prose">
     <p class="ap">
-      Inverse reinforcement learning (IRL) is typically formulated as maximizing entropy
-      subject to matching the distribution of expert trajectories. Classical dual-ascent IRL
-      guarantees monotonic improvement but requires fully solving an RL problem each iteration.
-      Adversarial methods skip this cost — but sacrifice stability and monotonic improvement
-      by replacing the global reward with local discriminator outputs.
+    Inverse reinforcement learning (IRL) is typically formulated as maximizing entropy subject to matching the distribution of expert trajectories. Classical (dual-ascent) IRL guarantees monotonic performance improvement but requires fully solving an RL problem each iteration to compute dual gradients. More recent adversarial methods avoid this cost at the expense of stability and monotonic dual improvement, by directly optimizing the primal problem and using a discriminator to provide rewards. In this work, we bridge the gap between these approaches by enabling monotonic improvement of the reward function and policy without having to fully solve an RL problem at every iteration. Our key theoretical insight is that a trust-region-optimal policy for a reward function update can be globally optimal for a smaller update in the same direction. This smaller update allows us to explicitly optimize the dual objective while only relying on a local search around the current policy. In doing so, our approach avoids the training instabilities of adversarial methods, offers monotonic performance improvement, and learns a reward function in the traditional sense of IRL---one that can be globally optimized to match expert demonstrations. Our proposed algorithm, <strong>Trust Region Inverse Reinforcement Learning (TRIRL)</strong>, outperforms state-of-the-art imitation learning methods across multiple challenging tasks by a factor of 2.4x in terms of aggregate inter-quartile mean, while recovering reward functions that generalize to system dynamics shifts. 
     </p>
-    <p class="ap">
-      We bridge the gap. Our central insight is that a trust-region-optimal policy for a
-      reward update can be globally optimal for a <em>smaller update in the same direction</em>
-      — enabling explicit dual optimization from only a local policy search. The resulting
-      algorithm, <strong>Trust Region Inverse Reinforcement Learning (TRIRL)</strong>, avoids
-      adversarial instabilities, provides monotonic improvement guarantees, and learns a
-      globally-optimizable reward function that can be re-optimized and transferred to new
-      environments.
-    </p>
-    <p class="ap">
-      TRIRL outperforms state-of-the-art imitation learning methods by <strong>2.4&times;</strong>
-      in aggregate inter-quartile mean across challenging MuJoCo and humanoid robotics tasks,
-      while recovering reward functions robust to system dynamics shifts.
     </p>
   </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+       RESULTS
+       ═══════════════════════════════════════════════════════ -->
+  <h2 class="section-label ap">Results</h2>
+
+  <p class="ap">
+    We compare against state-of-the-art IL/IRL methods on MuJoCo benchmarks and humanoid/quadrupedal robotics tasks (Unitree G1, Go2), across 20 independent seeds. TRIRL can be used in observation-based imitation settings, and with arbitrary feature functions.
+  </p>
+
+  <!-- Main results figure -->
+  <!-- <figure>
+    <img
+      class="fig-img ap"
+      src="static/figures/trirl_results.svg"
+      alt="Imitation learning results across all environments comparing TRIRL against baselines">
+    <figcaption class="ap">
+      TRIRL matches/outperforms all baselines in every environment, achieving an improvement of <strong>2.4&times;</strong> in terms of aggregate IQM.
+    </figcaption>
+  </figure> -->
+<!-- Main results figure -->
+<figure class="fig-img-pair">
+  <div class="fig-img-switch ap" aria-label="TRIRL results figure">
+    <img
+      class="fig-img fig-img--light"
+      src="static/figures/trirl_results.svg"
+      alt="Imitation learning results across all environments comparing TRIRL against baselines">
+
+    <img
+      class="fig-img fig-img--dark"
+      src="static/figures/trirl_results_light.svg"
+      alt="Imitation learning results across all environments comparing TRIRL against baselines">
+  </div>
+
+  <figcaption class="fig-caption-center ap">
+    TRIRL matches/outperforms all baselines in every environment, achieving an improvement of <strong>2.4&times;</strong> in terms of aggregate IQM.
+  </figcaption>
+</figure>
+
+
+  <figure class="booktabs-table ap">
+    <figcaption>
+      TRIRL learns a global reward that can be re-optimized from a fresh policy initialization and transfers to environments with modified dynamics (Ant with disabled legs, HalfCheetah with wind, HalfCheetah with Mars gravity). TRIRL outperforms AIRL and NEAR in all retraining and transfer settings.
+    </figcaption>
+
+    <div class="table-scroll">
+      <table class="perf-table">
+        <thead>
+          <tr>
+            <th rowspan="2" class="task-head">Task</th>
+            <th colspan="3" class="group-head">Training</th>
+            <th colspan="3" class="group-head">Retraining</th>
+            <th colspan="3" class="group-head">Transfer</th>
+          </tr>
+          <tr>
+            <th>TRIRL</th>
+            <th>AIRL</th>
+            <th>NEAR</th>
+            <th>TRIRL</th>
+            <th>AIRL</th>
+            <th>NEAR</th>
+            <th>TRIRL</th>
+            <th>AIRL</th>
+            <th>NEAR</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <th scope="row">Point Maze</th>
+            <td><strong>1.03 &plusmn; 0.01</strong></td>
+            <td>0.45 &plusmn; 0.12</td>
+            <td>0.28 &plusmn; 0.09</td>
+            <td><strong>0.98 &plusmn; 0.01</strong></td>
+            <td>0.35 &plusmn; 0.07</td>
+            <td>0.28 &plusmn; 0.09</td>
+            <td><strong>0.96 &plusmn; 0.001</strong></td>
+            <td>0.06 &plusmn; 0.64</td>
+            <td>0.29 &plusmn; 0.13</td>
+          </tr>
+
+          <tr>
+            <th scope="row">Ant</th>
+            <td><strong>0.91 &plusmn; 0.17</strong></td>
+            <td>0.59 &plusmn; 0.25</td>
+            <td>0.46 &plusmn; 0.29</td>
+            <td><strong>0.63 &plusmn; 0.09</strong></td>
+            <td>0.10 &plusmn; 0.13</td>
+            <td>0.46 &plusmn; 0.29</td>
+            <td><strong>0.89 &plusmn; 0.12</strong></td>
+            <td>0.42 &plusmn; 0.25</td>
+            <td>0.33 &plusmn; 0.18</td>
+          </tr>
+
+          <tr>
+            <th scope="row">Half Cheetah</th>
+            <td><strong>0.83 &plusmn; 0.19</strong></td>
+            <td>0.39 &plusmn; 0.14</td>
+            <td>0.09 &plusmn; 0.28</td>
+            <td><strong>0.70 &plusmn; 0.24</strong></td>
+            <td>0.08 &plusmn; 0.28</td>
+            <td>0.09 &plusmn; 0.28</td>
+            <td>
+              <span class="table-line">(W) <strong>0.63 &plusmn; 0.29</strong></span>
+              <span class="table-line">(MG) <strong>0.30 &plusmn; 0.13</strong></span>
+            </td>
+            <td>
+              <span class="table-line">(W) 0.16 &plusmn; 0.25</span>
+              <span class="table-line">(MG) -0.10 &plusmn; 0.06</span>
+            </td>
+            <td>
+              <span class="table-line">(W) 0.10 &plusmn; 0.18</span>
+              <span class="table-line">(MG) -0.06 &plusmn; 0.12</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th scope="row">Hopper</th>
+            <td>0.49 &plusmn; 0.16</td>
+            <td><strong>0.68 &plusmn; 0.11</strong></td>
+            <td>0.22 &plusmn; 0.09</td>
+            <td><strong>0.36 &plusmn; 0.13</strong></td>
+            <td>0.12 &plusmn; 0.11</td>
+            <td>0.22 &plusmn; 0.09</td>
+            <td>---</td>
+            <td>---</td>
+            <td>---</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </figure>
+
+
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -212,93 +394,97 @@
        · thm-block  — theorem / lemma box
        · hl-block   — left-bar highlight / callout
        ═══════════════════════════════════════════════════════ -->
-  <h2 class="section-label ap">Key Insight</h2>
+  <h2 class="section-label ap">Theory</h2>
 
   <p class="ap">
-    The MCE-IRL dual objective is improved by iterative function-space reward updates:
+    We are interested in IRL by reverse KL divergence-based distribution matching
   </p>
-
-  <!-- Equation block -->
   <div class="eq-block ap">
-    $$r^{(i+1)} = r^{(i)} - \epsilon\!\left(r^{(i)} -
-      \beta\log\frac{\rho_E(\mathbf{s},\mathbf{a})}
-                    {\rho_{\pi^{(i)}}(\mathbf{s},\mathbf{a})}\right)$$
+    $$\underset{\pi}{\max} \quad \mathbb{E}_{\rho_{\pi}(\mathbf{s})} \left[ H(\pi) \right] - \beta \mathbb{E}_{\rho_{\pi}(\mathbf{s}, \mathbf{a})} \left[ \log \frac{\rho_{\pi}(\mathbf{s}, \mathbf{a})}{\rho_{E}(\mathbf{s}, \mathbf{a})} \right]$$
   </div>
-
   <p class="ap">
-    Each update requires the MCE-optimal policy $\pi^{(i)}$ — which classically demands
-    running RL to convergence. TRIRL avoids this with a key equivalence:
+    This problem is classically solved using Lagrangian optimization by formulating a Lagrangian $\mathcal{L}(\pi, r)$, deriving the Lagrangian dual $\mathcal{G}(r) = \mathcal{L}(\pi_r, r)$, and minimizing it using gradient descent. However, instead of using standard gradient descent, we use an empirically superior function-space reward update
   </p>
-
-  <!-- Theorem block -->
+  <div class="eq-block ap">
+    $$r^{(i+1)} = \left( \mathcal{U}_{\epsilon}^{\rho^{(i)}} \right) r^{(i)} = r^{(i)} - \epsilon \underbrace{\left(r^{(i)} - \beta \log \frac{\rho_{E}(\mathbf{s}, \mathbf{a})}{\rho_{\pi^{(i)}}(\mathbf{s}, \mathbf{a})} \right)}_{\delta^{(i)}}$$
+  </div>
+  <p class="ap">
+    Given such a function-space reward update, our key theoretical contribution is that
+  </p>
   <div class="thm-block ap">
-    <div class="thm-block__label">Theorem (informal)</div>
-    A trust-region-optimal policy for updated reward $\tilde{r}^{(i+1)}$ with step $\epsilon$
-    is the MCE-optimal policy for a <em>corrected</em> reward $r^{(i+1)}$ with a smaller step
-    $\epsilon_\mathrm{tr} = \epsilon\,/\,(1{+}\eta)$, where $\eta \geq 0$ is the trust-region
-    Lagrangian multiplier.
+    <div class="thm-block__label">Theorem</div>
+    A trust-region-optimal policy $\pi_\text{tr}^{(i+1)}(\mathbf{a}|\mathbf{s})$ for a reward function $\left( \mathcal{U}_{\epsilon}^{\rho^{(i)}} \right) r^{(i)}$ with step size $\epsilon$ is maximum-entropy-optimal for a different reward function $\left( \mathcal{U}_{\epsilon_{\text{tr}}}^{\rho^{(i)}} \right) r^{(i)}$, with a corrected step size $\epsilon_{\text{tr}}$. Where $\epsilon_\text{tr} = \nicefrac{\epsilon}{\left( 1+\eta \right)}$ is a step size smaller than the initial step size, and $\eta \geq 0$ is the Lagrangian multiplier associated with the trust region constraint satisfied during policy optimization.
   </div>
-
   <p class="ap">
-    In practice: run a trust-region policy update, read off $\eta$, shrink the reward step
-    accordingly. The resulting policy–reward pair is MCE-valid, and successive applications
-    improve the dual monotonically — no full RL solve required.
+    Hence, we use a novel mechanic for IRL: <strong> instead of finding a max-ent optimal policy for the updated reward, we find a trust region optimal policy for this reward, and correct the reward function to account for the fact that our policy was only optimized locally.</strong>
   </p>
 
-  <!-- Figure placeholder — replace with real figure when ready -->
-  <figure>
-    <div class="fig-ph ap">
-      [Figure: TRIRL vs. MCE-IRL — reward correction illustration]
-    </div>
-    <figcaption class="ap">
-      <strong>Figure 1.</strong> TRIRL performs a trust-region policy update then corrects
-      the reward, rather than running RL to convergence. Both guarantee monotonic progress
-      toward the Lagrangian saddle point — but TRIRL requires only a local search.
-    </figcaption>
-  </figure>
+<figure class="latex-algorithm ap" id="alg-rewardCorrection">
+  <figcaption class="latex-algorithm__caption">
+    <span class="latex-algorithm__label">Algorithm 1</span>
+    <span class="latex-algorithm__title">Trust Region Inverse RL</span>
+  </figcaption>
+
+  <ol class="latex-algorithmic">
+    <li>
+      <span class="alg-keyword">Initialize:</span>
+      \(\epsilon\) ; \(r^{(0)} = 0.0\) ; \(\pi^{(0)} = \text{unif.}\)
+    </li>
+
+    <li>
+      <span class="alg-keyword">Output:</span>
+      \(r^\star\) and \(\pi^\star\)
+    </li>
+
+    <li>
+      <span class="alg-keyword">repeat</span>
+    </li>
+
+    <li class="alg-indent">
+      rollout \(\pi^{(i)}\) ; learn
+      \(D^{(i)} \approx \log\!\left(\frac{\rho_E}{\rho_{\pi^{(i)}}}\right)\)
+    </li>
+
+    <li class="alg-indent">
+      \(\tilde{r}^{(i+1)} = (1-\epsilon) r^{(i)} + \epsilon \beta D^{(i)}\)
+      <!-- <span class="alg-ref">Eq. reward update</span> -->
+    </li>
+
+    <li class="alg-indent">
+      \(\pi_{\text{tr}}^{(i+1)}\) &amp; \(\eta^{(i+1)} \gets\)
+      trust region policy update
+    </li>
+
+    <li class="alg-indent">
+      \(\epsilon_{\text{tr}} =
+      \frac{\epsilon}{\left( 1 + \eta^{(i+1)} \right)}\)
+    </li>
+
+    <li class="alg-indent">
+      \(r^{(i+1)} =
+      (1-\epsilon_{\text{tr}}) r^{(i)}
+      + \epsilon_{\text{tr}} \beta D^{(i)}\)
+    </li>
+
+    <li class="alg-indent">
+      \(\pi_{\text{tr}} \text{ on } \tilde{r}^{(i+1)}
+      \equiv
+      \pi_{\text{MCE}} \text{ on } r^{(i+1)}\)
+    </li>
+
+    <li class="alg-indent">
+      \(r^{(i)} \gets r^{(i+1)}\) ;
+      \(\pi^{(i)} \gets \pi_{\text{tr}}^{(i+1)}\)
+    </li>
+
+    <li>
+      <span class="alg-keyword">until</span> converged
+    </li>
+  </ol>
+</figure>
 
 
-  <!-- ═══════════════════════════════════════════════════════
-       RESULTS
-       ═══════════════════════════════════════════════════════ -->
-  <h2 class="section-label ap">Results</h2>
 
-  <p class="ap">
-    We compare against GAIL, AIRL, AMP, LSIQ, NEAR, and SFM on five MuJoCo benchmarks
-    and three humanoid locomotion tasks (Unitree G1 Walking/Running, Unitree Go2),
-    across 20 independent seeds. G1 tasks use state-based observations from motion-capture.
-  </p>
-
-  <!-- Main results figure placeholder -->
-  <figure>
-    <div class="fig-ph fig-ph--tall ap">
-      [Figure: Imitation learning results across all environments]
-    </div>
-    <figcaption class="ap">
-      <strong>Figure 2.</strong> TRIRL matches or outperforms all baselines in every
-      environment, achieving a <strong>2.4&times;</strong> aggregate IQM improvement.
-    </figcaption>
-  </figure>
-
-  <h3 class="sub-label ap">Global &amp; Transferable Rewards</h3>
-
-  <p class="ap">
-    Unlike adversarial methods, TRIRL learns a global reward that can be re-optimized from
-    a fresh policy initialization and transfers to environments with modified dynamics
-    (Ant with disabled legs, HalfCheetah with wind, HalfCheetah with Mars gravity).
-    TRIRL outperforms AIRL and NEAR in all retraining and transfer settings.
-  </p>
-
-  <!-- Transfer results figure placeholder -->
-  <figure>
-    <div class="fig-ph ap">
-      [Figure: Reward retraining and transfer performance]
-    </div>
-    <figcaption class="ap">
-      <strong>Figure 3.</strong> TRIRL's global reward ensures reliable convergence on
-      retraining. Baselines frequently fail due to rewards entangled with the training policy.
-    </figcaption>
-  </figure>
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -309,11 +495,11 @@
   <h2 id="cite" class="section-label ap">Citation</h2>
 
   <pre class="ap">@inproceedings{diwan2026trirl,
-  title     = {Trust Region Inverse Reinforcement Learning},
+  title     = {Trust Region Inverse Reinforcement Learning: 
+              Explicit Dual Ascent using Local Policy Updates},
   author    = {Diwan, Anish and Tateo, Davide and Mower, Christopher E.
-               and {Bou Ammar}, Haitham and Peters, Jan and Arenz, Oleg},
-  booktitle = {Proceedings of the 43rd International Conference on
-               Machine Learning (ICML)},
+               and Bou-Ammar, Haitham and Peters, Jan and Arenz, Oleg},
+  booktitle = {International Conference on Machine Learning (ICML)},
   year      = {2026}
 }</pre>
 

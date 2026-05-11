@@ -59,24 +59,32 @@ The `body.dark { ... }` block just below gives dark-mode overrides for the same 
 
 Two steps:
 
-**Step 1** — in `style.css` Section 1, update `--font-body`:
+There are two font variables: `--font-heading` (the h1 title, currently Fraunces) and `--font-body` (everything else, currently DM Sans).
+
+**Step 1** — in `style.css` Section 1, update one or both:
 
 ```css
---font-body : 'Inter', system-ui, sans-serif;
+--font-heading : 'Playfair Display', Georgia, serif;
+--font-body    : 'Inter', system-ui, sans-serif;
 ```
 
-**Step 2** — in **each HTML file** (`index.html` and `blog.html`), find the comment block labelled `FONT` in the `<head>` and update the Google Fonts URL:
+**Step 2** — in **each HTML file** (`index.html` and `blog.html`), find the `FONT` comment in `<head>` and update the Google Fonts URL to include your chosen families:
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet">
 ```
 
-Popular alternatives to try:
-- `family=Inter:wght@400;500;600;700`
-- `family=Plus+Jakarta+Sans:wght@400;500;600;700`
-- `family=Outfit:wght@400;500;600;700`
-- `family=Source+Serif+4:wght@400;600;700` _(for a more academic feel)_
+Popular body font alternatives:
+- `Inter:wght@400;500;600;700`
+- `Plus+Jakarta+Sans:wght@400;500;600;700`
+- `Outfit:wght@400;500;600;700`
+
+Popular heading font alternatives:
+- `Fraunces:opsz,wght@9..144,600;9..144,700` _(current — modern serif)_
+- `Playfair+Display:wght@700` _(classic editorial serif)_
+- `DM+Serif+Display` _(pairs naturally with DM Sans body)_
+- Remove the heading font entirely and set `--font-heading: var(--font-body)` for a pure sans-serif look.
 
 ---
 

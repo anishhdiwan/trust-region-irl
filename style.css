@@ -14,67 +14,117 @@
 
 :root {
 
-  /* ── FONT ────────────────────────────────────────────────────
-   * To change the typeface:
-   *   1. Replace the Google Fonts <link> URL in each HTML file's
-   *      <head> (look for the "FONT" comment block there).
-   *   2. Update the family name in --font-body below.
-   * ----------------------------------------------------------- */
-  --font-body   : 'DM Sans', system-ui, sans-serif;
-  --font-mono   : 'DM Mono', 'Fira Code', 'Courier New', monospace;
+  /* ── FONTS ────────────────────────────────────────────────────
+   * --font-heading : paper/post title only (the large h1).
+   * --font-body    : all other text.
+   * To change: 1) update the Google Fonts <link> in each HTML
+   *               file (look for the "FONT" comment in <head>).
+   *            2) update the family name(s) below.              */
+  --font-heading : 'Fraunces', Georgia, serif;
+  --font-body    : 'DM Sans', system-ui, sans-serif;
+  --font-mono    : 'DM Mono', 'Fira Code', 'Courier New', monospace;
 
   /* ── TYPE SCALE ──────────────────────────────────────────── */
+  --text-author_afils     : 17px;   /* authors and affiliations                */
   --text-xs     : 11px;   /* tiny labels, badges                */
-  --text-sm     : 13px;   /* captions, metadata, footer         */
+  --text-sm     : 14px;   /* captions, metadata, footer         */
   --text-base   : 15px;   /* body copy                          */
   --text-lg     : 16px;   /* TL;DR, lead paragraph              */
-  --text-h1     : 25px;   /* paper title                        */
-  --text-h2     : 12px;   /* section labels (uppercase)         */
+  --text-h1     : 32px;   /* paper title                        */
+  --text-h2     : 20px;   /* section labels (uppercase)         */
   --text-stat   : 22px;   /* stat strip numbers                 */
-  --lh-base     : 1.72;   /* body line-height                   */
-  --lh-tight    : 1.25;   /* headings                           */
+  --lh-base     : 1.74;   /* body line-height                   */
+  --lh-tight    : 1.2;    /* headings                           */
 
-  /* ── COLOURS — light mode ────────────────────────────────── */
-  --c-bg        : #f5f7fd;   /* page background                 */
-  --c-surf      : #ffffff;   /* cards, code blocks, pre         */
-  --c-surf2     : #edf2fc;   /* hero tint, theorem background   */
-  --c-accent    : #1d6fe8;   /* primary highlight colour        */
-  --c-text      : #18181b;   /* body text                       */
-  --c-head      : #0d0e14;   /* headings                        */
-  --c-muted     : #556070;   /* secondary text                  */
-  --c-subtle    : #8a9cb0;   /* labels, placeholders            */
-  --c-border    : #dce4ef;   /* borders                         */
-  --c-dot       : #c4cfdf;   /* dot-grid dots in hero           */
-
-  /* ── COLOURS — dark mode (override block below) ─────────── */
-  /* See "body.dark { ... }" section to adjust dark-mode tones  */
-
-  /* ── LAYOUT ─────────────────────────────────────────────── */
-  --page-w      : 800px;    /* max content width                */
-  --page-pad    : 40px;     /* horizontal padding (desktop)     */
+  /* ── LAYOUT ──────────────────────────────────────────────── */
+  --page-w      : 1040px;    /* max content width — all pages    */
+  --page-pad    : 44px;     /* horizontal padding (desktop)     */
   --page-pad-sm : 20px;     /* horizontal padding (mobile)      */
+  --page-pad-top   : 44px;  /* vertical padding — top           */
+  --page-pad-bottom: 88px;  /* vertical padding — bottom        */
 
   /* ── RADII ───────────────────────────────────────────────── */
-  --r-sm        : 4px;   /* tags, badges, buttons               */
-  --r-md        : 6px;   /* theorem, equation blocks            */
-  --r-lg        : 9px;   /* hero, cards, figure wrappers        */
+  --r-sm        : 4px;
+  --r-md        : 6px;
+  --r-lg        : 9px;
+
+  /* ══════════════════════════════════════════════════════════
+   * COLOR PRESETS
+   * Uncomment exactly ONE preset block. Comment the others.
+   * Each block defines the full light AND dark palette — accent,
+   * surfaces, border, and dot — so one comment/uncomment switches
+   * both modes. Save and reload to apply.
+   * ══════════════════════════════════════════════════════════ */
+
+/* ── PRESET 1 · Powder Blue  (default) ───────────────────── */
+/* --c-accent      : #5b8fc9;   --c-accent-dark  : #7aaee0;
+--c-surf        : #f7f7f8;   --c-surf-dark    : #101320;
+--c-surf2       : #f1f4f9;   --c-surf2-dark   : #141828;
+--c-border-dk   : #1d2433;   --c-dot-dk       : #273040;
+--c-title-accent: #5b8fc9;   --c-title-accent-dark: #7aaee0; */
+
+/* ── PRESET 2 · Slate  (uncomment to try) ────────────────── */
+/* --c-accent      : #5f7592;   --c-accent-dark  : #8aaac4;
+   --c-surf        : #f7f8f8;   --c-surf-dark    : #101214;
+   --c-surf2       : #f1f3f6;   --c-surf2-dark   : #14171c;
+   --c-border-dk   : #1c2028;   --c-dot-dk       : #262c36;
+   --c-title-accent: #5f7592;   --c-title-accent-dark: #8aaac4; */
+
+/* ── PRESET 3 · Sage Green  (uncomment to try) ───────────── */
+/* --c-accent      : #4e7d68;   --c-accent-dark  : #72a891;
+   --c-surf        : #f7f8f7;   --c-surf-dark    : #0e1410;
+   --c-surf2       : #f1f5f3;   --c-surf2-dark   : #121814;
+   --c-border-dk   : #1a2620;   --c-dot-dk       : #24342c;
+   --c-title-accent: #4e7d68;   --c-title-accent-dark: #72a891; */
+
+/* ── PRESET 4 · Warm Sienna  (uncomment to try) ──────────── */
+/* --c-accent      : #b06b40;   --c-accent-dark  : #d4925e;
+   --c-surf        : #f8f7f6;   --c-surf-dark    : #140f0c;
+   --c-surf2       : #f5f0eb;   --c-surf2-dark   : #19130f;
+   --c-border-dk   : #261e18;   --c-dot-dk       : #332620;
+   --c-title-accent: #b06b40;   --c-title-accent-dark: #d4925e; */
+
+/* ── PRESET 5 · Charcoal  (monochrome) ───────────────────── */
+/* --c-accent      : #4a5568;   --c-accent-dark  : #7890a8;
+   --c-surf        : #f7f7f7;   --c-surf-dark    : #111214;
+   --c-surf2       : #efefef;   --c-surf2-dark   : #161819;
+   --c-border-dk   : #1e2024;   --c-dot-dk       : #282c32;
+   --c-title-accent: #4a5568;   --c-title-accent-dark: #7890a8; */
+
+/* ── PRESET 6 · Mauve Fig  ─────────────────────────────────── */
+--c-accent      : #7a5264;   --c-accent-dark  : #d19ab0;
+--c-surf        : #f8f7f8;   --c-surf-dark    : #111014;
+--c-surf2       : #f2eff2;   --c-surf2-dark   : #17141b;
+--c-border-dk   : #27222c;   --c-dot-dk       : #342d38;
+--c-title-accent: #7a5264;   --c-title-accent-dark: #d19ab0;
+
+
+  /* ── BASE PALETTE (shared by all presets) ─────────────────── */
+  --c-bg     : #ffffff;   /* page background — always white     */
+  --c-text   : #18181b;   /* body text                          */
+  --c-head   : #0d0d0f;   /* headings & bold elements           */
+  --c-muted  : #566070;   /* secondary text                     */
+  --c-subtle : #8a9aaa;   /* labels, placeholders               */
+  --c-border : #e0e3e8;   /* borders                            */
+  --c-dot    : #dde0e5;   /* dot-grid dots in hero placeholder  */
 }
 
-/* ──────────────────────────────────────────────────────────────
- * DARK MODE — colour-only overrides.
- * Layout, spacing, typography stay as declared above.
- * ────────────────────────────────────────────────────────────── */
+/* ── DARK MODE ────────────────────────────────────────────────
+   Only colour tokens override. Layout and type are inherited.
+   All per-preset colours (accent, surfaces, border, dot) resolve
+   from the active preset block — switch preset, both modes update. */
 body.dark {
-  --c-bg        : #0a0c12;
-  --c-surf      : #10131d;
-  --c-surf2     : #141828;
-  --c-accent    : #5ba3f5;
-  --c-text      : #d3dae6;
-  --c-head      : #edf2f7;
-  --c-muted     : #7a8fa8;
-  --c-subtle    : #475669;
-  --c-border    : #1d2433;
-  --c-dot       : #273040;
+  --c-bg     : #0a0c12;
+  --c-surf   : var(--c-surf-dark);     /* from active preset */
+  --c-surf2  : var(--c-surf2-dark);    /* from active preset */
+  --c-accent : var(--c-accent-dark);   /* from active preset */
+  --c-text   : #d3dae6;
+  --c-head   : #edf2f7;
+  --c-muted  : #7a8fa8;
+  --c-subtle : #475669;
+  --c-border : var(--c-border-dk);     /* from active preset */
+  --c-dot    : var(--c-dot-dk);        /* from active preset */
+  --c-title-accent: var(--c-title-accent-dark);
 }
 
 
@@ -112,13 +162,10 @@ a:hover { border-bottom-color: var(--c-accent); }
 .page {
   max-width : var(--page-w);
   margin    : 0 auto;
-  padding   : 44px var(--page-pad) 88px;
+  padding   : var(--page-pad-top) var(--page-pad) var(--page-pad-bottom);
 }
 
-/* narrower column for blog posts */
-.page--blog {
-  max-width : 680px;
-}
+/* blog posts use the same width as the main page (--page-w) */
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -161,44 +208,115 @@ a:hover { border-bottom-color: var(--c-accent); }
 
 /* ── Venue / badge tag ── */
 .venue-tag {
-  display      : inline-block;
-  font-size    : var(--text-xs);
-  font-weight  : 700;
-  text-transform: uppercase;
-  letter-spacing: .10em;
-  color        : var(--c-accent);
-  background   : var(--c-surf2);
-  border       : 1px solid var(--c-border);
-  border-radius: var(--r-sm);
-  padding      : 3px 10px;
-  margin-bottom: 18px;
+  display        : inline-flex;
+  align-items    : center;
+  gap            : 10px;
+  color          : #18181b;
+  background     : #ffffff;
+  border         : 1px solid #e0e3e8;
+  border-radius  : var(--r-md);
+  padding        : 8px 14px 8px 11px;
+  margin-bottom  : 20px;
+  line-height    : 1;
+  box-shadow     : 0 1px 2px rgba(15, 23, 42, .04);
+}
+
+.venue-tag__logo {
+  height      : 31px;
+  width       : auto;
+  display     : block;
+  flex-shrink : 0;
+}
+
+.venue-tag__meta {
+  font-size      : 17px;
+  font-weight    : 900;
+  letter-spacing : .10em;
+  color          : #18181b;
+  line-height    : 1;
 }
 
 /* ── Paper / post title ── */
 .site-title {
+  font-family  : var(--font-heading);
   font-size    : var(--text-h1);
   font-weight  : 700;
-  letter-spacing: -.025em;
+  letter-spacing: -.01em;
   line-height  : var(--lh-tight);
   color        : var(--c-head);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
-/* Coloured fragment inside the title */
-.title-accent { color: var(--c-accent); }
+/* Fragment inside the title — colour removed, inherits black */
+/* .title-accent { color: inherit; } */
+
+.title-accent {
+  color: var(--c-title-accent);
+}
+
 
 /* ── Authors ── */
 .authors {
-  font-size    : var(--text-sm);
+  font-size    : var(--text-author_afils);
   color        : var(--c-muted);
   margin-bottom: 4px;
 }
 
+.authors a {
+  color         : inherit;
+  border-bottom : none;
+}
+
+.authors a:hover {
+  color         : var(--c-accent);
+  border-bottom : none;
+}
+
 /* ── Affiliations ── */
 .affils {
-  font-size    : 12px;
+  font-size    : var(--text-sm);
   color        : var(--c-subtle);
   margin-bottom: 22px;
   line-height  : 1.55;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 5.1 · AFFILIATIONS
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── Affiliation logo strip ── */
+.affil-logos {
+  display        : flex;
+  flex-wrap      : wrap;
+  align-items    : center;
+  gap            : 14px 20px;
+  margin         : 4px 0 20px;
+}
+
+.affil-logo-pair {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  flex-shrink     : 0;
+}
+
+.affil-logo {
+  display    : block;
+  width      : var(--logo-w);
+  height     : auto;
+  object-fit : contain;
+}
+
+.affil-logo--dark {
+  display : none;
+}
+
+body.dark .affil-logo--light {
+  display : none;
+}
+
+body.dark .affil-logo--dark {
+  display : block;
 }
 
 
@@ -279,7 +397,7 @@ a:hover { border-bottom-color: var(--c-accent); }
   font-weight    : 700;
   text-transform : uppercase;
   letter-spacing : .10em;
-  color          : var(--c-accent);
+  color          : var(--c-muted);
 }
 .hero-ph__hint {
   font-size  : var(--text-sm);
@@ -289,10 +407,35 @@ a:hover { border-bottom-color: var(--c-accent); }
 
 /* Real figure version — add class="hero-img" to your <img> tag */
 .hero-img {
-  width         : 100%;
-  border-radius : var(--r-lg);
-  border        : 1px solid var(--c-border);
+  width         : 70%;
+  /* border-radius : var(--r-lg);
+  border        : 1px solid var(--c-border); */
   margin        : 26px 0 8px;
+}
+
+.hero-img-pair {
+  display         : flex;
+  justify-content : center;
+  align-items     : center;
+  margin          : 26px auto 8px;
+}
+
+.hero-img-pair .hero-img {
+  width     : 70%;
+  max-width : 960px; /* adjust this: try 900–1000px */
+  margin    : 0 auto;
+}
+
+.hero-img--dark {
+  display : none;
+}
+
+body.dark .hero-img--light {
+  display : none;
+}
+
+body.dark .hero-img--dark {
+  display : block;
 }
 
 
@@ -339,7 +482,7 @@ a:hover { border-bottom-color: var(--c-accent); }
   font-size      : var(--text-stat);
   font-weight    : 700;
   letter-spacing : -.02em;
-  color          : var(--c-accent);
+  color          : var(--c-head);
   line-height    : 1;
   margin-bottom  : 5px;
 }
@@ -373,13 +516,13 @@ h2.section-label {
   color          : var(--c-muted);
   margin         : 52px 0 18px;
 }
-/* Coloured left bar — change colour via --c-accent */
+/* Dark typographic bar — editorial, not a colour accent */
 h2.section-label::before {
   content       : '';
   display       : inline-block;
   width         : 3px;
   height        : 14px;
-  background    : var(--c-accent);
+  background    : var(--c-head);
   border-radius : 2px;
   flex-shrink   : 0;
 }
@@ -402,11 +545,17 @@ h3.sub-label {
 .prose p {
   margin-bottom : 14px;
   color         : var(--c-text);
+  text-align    : justify;
+  hyphens       : auto;
 }
 .prose p:last-child { margin-bottom: 0; }
 
 /* Standalone paragraphs outside .prose */
-p { margin-bottom: 14px; }
+p {
+  margin-bottom : 14px;
+  text-align    : justify;
+  hyphens       : auto;
+}
 p:last-child { margin-bottom: 0; }
 
 
@@ -417,9 +566,9 @@ p:last-child { margin-bottom: 0; }
  * ══════════════════════════════════════════════════════════════ */
 
 .eq-block {
-  background    : var(--c-surf);
-  border        : 1px solid var(--c-border);
-  border-radius : var(--r-md);
+  /* background    : var(--c-surf); */
+  /* border        : 1px solid var(--c-border);
+  border-radius : var(--r-md); */
   padding       : 18px 22px;
   margin        : 18px 0;
   text-align    : center;
@@ -434,9 +583,9 @@ p:last-child { margin-bottom: 0; }
  *   .hl-block    — left-bar accent, for callouts / key points
  * ══════════════════════════════════════════════════════════════ */
 
-/* Theorem block */
+/* Theorem block — neutral gray, no accent tint */
 .thm-block {
-  background    : var(--c-surf2);
+  background    : var(--c-surf);
   border        : 1px solid var(--c-border);
   border-radius : var(--r-md);
   padding       : 16px 20px;
@@ -445,11 +594,11 @@ p:last-child { margin-bottom: 0; }
   line-height   : 1.68;
 }
 .thm-block__label {
-  font-size      : var(--text-xs);
-  font-weight    : 700;
+  font-size      : var(--text-sm);
+  font-weight    : 900;
   text-transform : uppercase;
   letter-spacing : .08em;
-  color          : var(--c-accent);
+  color          : var(--c-muted);
   margin-bottom  : 7px;
 }
 
@@ -463,6 +612,109 @@ p:last-child { margin-bottom: 0; }
   font-size     : var(--text-base);
   line-height   : 1.68;
   color         : var(--c-text);
+}
+
+
+
+/* ══════════════════════════════════════════════════════════════
+ * LATEX-STYLE ALGORITHM BLOCK
+ * ══════════════════════════════════════════════════════════════ */
+
+.latex-algorithm {
+  margin      : 28px auto;
+  max-width   : 760px;
+  color       : var(--c-text);
+  font-size   : var(--text-sm);
+  line-height : 1.45;
+}
+
+.latex-algorithm__caption {
+  text-align    : center;
+  color         : var(--c-head);
+  font-size     : var(--text-sm);
+  margin-bottom : 6px;
+  hyphens       : none;
+}
+
+.latex-algorithm__label {
+  font-weight : 700;
+}
+
+.latex-algorithm__title {
+  font-weight : 400;
+}
+
+.latex-algorithmic {
+  counter-reset  : alg-line;
+  list-style     : none;
+  margin         : 0;
+  padding        : 6px 0;
+  border-top     : 1.4px solid var(--c-head);
+  border-bottom  : 1.4px solid var(--c-head);
+  font-family    : var(--font-body);
+  background     : transparent;
+}
+
+.latex-algorithmic li {
+  counter-increment : alg-line;
+  position          : relative;
+  display           : block;
+  min-height        : 1.45em;
+  padding           : 1px 0 1px 42px;
+  color             : var(--c-text);
+  text-align        : left;
+  hyphens           : none;
+}
+
+.latex-algorithmic li::before {
+  content     : counter(alg-line) ":";
+  position    : absolute;
+  left        : 0;
+  top         : 1px;
+  width       : 30px;
+  text-align  : right;
+  color       : var(--c-muted);
+  font-size   : var(--text-sm);
+}
+
+.latex-algorithmic .alg-indent {
+  padding-left : 62px;
+}
+
+.latex-algorithmic .alg-indent::before {
+  left : 20px;
+}
+
+.alg-keyword {
+  font-weight : 700;
+  color       : var(--c-head);
+}
+
+.alg-ref {
+  color       : var(--c-muted);
+  font-size   : 12px;
+  margin-left : 4px;
+}
+
+/* Keep MathJax inline math visually close to LaTeX algorithm output */
+.latex-algorithm mjx-container {
+  line-height : 0;
+}
+
+/* Mobile: keep the algorithm readable without overflowing badly */
+@media (max-width: 540px) {
+  .latex-algorithm {
+    max-width : 100%;
+    font-size : 12px;
+  }
+
+  .latex-algorithmic {
+    overflow-x : auto;
+  }
+
+  .latex-algorithmic li {
+    min-width : 620px;
+  }
 }
 
 
@@ -492,10 +744,54 @@ p:last-child { margin-bottom: 0; }
 /* Real figure image — add class="fig-img" to <img> elements */
 .fig-img {
   width         : 100%;
-  border-radius : var(--r-lg);
-  border        : 1px solid var(--c-border);
+  /* border-radius : var(--r-lg); */
+  /* border        : 1px solid var(--c-border); */
   margin        : 18px 0 8px;
 }
+
+.fig-img-pair {
+  margin : 18px 0 26px;
+}
+
+.fig-img-switch {
+  display         : flex;
+  justify-content : center;
+  align-items     : center;
+  margin          : 18px 0 8px;
+}
+
+.fig-img-switch .fig-img {
+  width     : 100%;
+  max-width : 960px;
+  margin    : 0 auto;
+}
+
+/* Default: show dark-text figure on light page */
+.fig-img-switch .fig-img--light {
+  display : block;
+}
+
+/* Default: hide light-text figure */
+.fig-img-switch .fig-img--dark {
+  display : none;
+}
+
+/* Dark mode: hide dark-text figure */
+body.dark .fig-img-switch .fig-img--light {
+  display : none;
+}
+
+/* Dark mode: show light-text figure */
+body.dark .fig-img-switch .fig-img--dark {
+  display : block;
+}
+
+.fig-caption-center {
+  text-align    : center;
+  hyphens       : none;
+  margin-bottom : 26px;
+}
+
 
 figcaption {
   font-size     : var(--text-sm);
@@ -504,6 +800,104 @@ figcaption {
   margin-bottom : 26px;
 }
 figcaption strong { color: var(--c-text); }
+
+
+
+
+/* ── Booktabs-style results table ── */
+.booktabs-table {
+  margin : 22px 0 30px;
+}
+
+.booktabs-table figcaption {
+  font-size     : var(--text-sm);
+  color         : var(--c-muted);
+  line-height   : 1.55;
+  margin-bottom : 12px;
+  text-align    : left;
+  hyphens       : none;
+}
+
+.table-scroll {
+  width      : 100%;
+  overflow-x : auto;
+}
+
+.perf-table {
+  width           : 100%;
+  min-width       : 920px;
+  border-collapse : separate;
+  border-spacing  : 0;
+  font-size       : 12px;
+  line-height     : 1.42;
+  color           : var(--c-text);
+  background      : transparent;
+}
+
+.perf-table th,
+.perf-table td {
+  padding        : 8px 10px;
+  text-align     : center;
+  vertical-align : middle;
+  white-space    : nowrap;
+  border         : none;
+}
+
+.perf-table thead tr:first-child th {
+  border-top : 1.6px solid var(--c-head);
+}
+
+.perf-table thead tr:last-child th {
+  border-bottom : 1.1px solid var(--c-head);
+}
+
+.perf-table tbody tr:last-child th,
+.perf-table tbody tr:last-child td {
+  border-bottom : 1.6px solid var(--c-head);
+}
+
+.perf-table tbody th {
+  text-align  : left;
+  font-weight : 700;
+  color       : var(--c-head);
+}
+
+.perf-table thead th {
+  font-weight : 700;
+  color       : var(--c-head);
+}
+
+.perf-table .task-head {
+  text-align      : left;
+  vertical-align  : bottom;
+  border-bottom   : 1.1px solid var(--c-head);
+}
+
+.perf-table .group-head {
+  position       : relative;
+  padding-bottom : 9px;
+}
+
+.perf-table .group-head::after {
+  content    : '';
+  position   : absolute;
+  left       : 8px;
+  right      : 8px;
+  bottom     : 2px;
+  height     : 1px;
+  background : var(--c-head);
+}
+
+.perf-table strong {
+  font-weight : 800;
+  color       : var(--c-head);
+}
+
+.table-line {
+  display     : block;
+  line-height : 1.45;
+}
+
 
 
 /* ══════════════════════════════════════════════════════════════
