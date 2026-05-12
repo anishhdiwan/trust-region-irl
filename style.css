@@ -20,21 +20,21 @@
    * To change: 1) update the Google Fonts <link> in each HTML
    *               file (look for the "FONT" comment in <head>).
    *            2) update the family name(s) below.              */
-  --font-heading : 'Fraunces', Georgia, serif;
-  --font-body    : 'DM Sans', system-ui, sans-serif;
+  --font-heading : 'Source Serif 4', Georgia, serif;
+  --font-body    : 'Inter', system-ui, sans-serif;
   --font-mono    : 'DM Mono', 'Fira Code', 'Courier New', monospace;
 
   /* ── TYPE SCALE ──────────────────────────────────────────── */
-  --text-author_afils     : 17px;   /* authors and affiliations                */
+  --text-author_afils     : 16px;   /* authors and affiliations                */
   --text-xs     : 11px;   /* tiny labels, badges                */
   --text-sm     : 14px;   /* captions, metadata, footer         */
-  --text-base   : 15px;   /* body copy                          */
-  --text-lg     : 16px;   /* TL;DR, lead paragraph              */
+  --text-base   : 16px;   /* body copy                          */
+  --text-lg     : 17px;   /* TL;DR, lead paragraph              */
   --text-h1     : 32px;   /* paper title                        */
-  --text-h2     : 20px;   /* section labels (uppercase)         */
+  --text-h2     : 22px;   /* section labels (uppercase)         */
   --text-stat   : 22px;   /* stat strip numbers                 */
-  --lh-base     : 1.74;   /* body line-height                   */
-  --lh-tight    : 1.2;    /* headings                           */
+  --lh-base     : 1.72;   /* body line-height                   */
+  --lh-tight    : 1.22;   /* headings                           */
 
   /* ── LAYOUT ──────────────────────────────────────────────── */
   --page-w      : 1040px;    /* max content width — all pages    */
@@ -92,21 +92,28 @@
    --c-title-accent: #4a5568;   --c-title-accent-dark: #7890a8; */
 
 /* ── PRESET 6 · Mauve Fig  ─────────────────────────────────── */
---c-accent      : #7a5264;   --c-accent-dark  : #d19ab0;
---c-surf        : #f8f7f8;   --c-surf-dark    : #111014;
---c-surf2       : #f2eff2;   --c-surf2-dark   : #17141b;
---c-border-dk   : #27222c;   --c-dot-dk       : #342d38;
---c-title-accent: #7a5264;   --c-title-accent-dark: #d19ab0;
+/* --c-accent      : #7a5264;   --c-accent-dark  : #d19ab0;
+   --c-surf        : #f8f7f8;   --c-surf-dark    : #111014;
+   --c-surf2       : #f2eff2;   --c-surf2-dark   : #17141b;
+   --c-border-dk   : #27222c;   --c-dot-dk       : #342d38;
+   --c-title-accent: #7a5264;   --c-title-accent-dark: #d19ab0; */
+
+/* ── PRESET 7 · Clean Slate (active) ────────────────────────── */
+--c-accent      : #3a6ea5;   --c-accent-dark  : #6fa3d0;
+--c-surf        : #f7f9fc;   --c-surf-dark    : #0e1318;
+--c-surf2       : #edf2f8;   --c-surf2-dark   : #131c26;
+--c-border-dk   : #1c2a38;   --c-dot-dk       : #263850;
+--c-title-accent: #3a6ea5;   --c-title-accent-dark: #6fa3d0;
 
 
   /* ── BASE PALETTE (shared by all presets) ─────────────────── */
-  --c-bg     : #ffffff;   /* page background — always white     */
-  --c-text   : #18181b;   /* body text                          */
-  --c-head   : #0d0d0f;   /* headings & bold elements           */
-  --c-muted  : #566070;   /* secondary text                     */
-  --c-subtle : #8a9aaa;   /* labels, placeholders               */
-  --c-border : #e0e3e8;   /* borders                            */
-  --c-dot    : #dde0e5;   /* dot-grid dots in hero placeholder  */
+  --c-bg     : #ffffff;   /* page background                    */
+  --c-text   : #111111;   /* body text — near black             */
+  --c-head   : #050505;   /* headings & bold elements — black   */
+  --c-muted  : #444444;   /* secondary text — dark gray         */
+  --c-subtle : #777777;   /* tertiary text — medium gray        */
+  --c-border : #e0e4ea;   /* borders                            */
+  --c-dot    : #d0d8e4;   /* dot-grid dots in hero placeholder  */
 }
 
 /* ── DARK MODE ────────────────────────────────────────────────
@@ -114,14 +121,14 @@
    All per-preset colours (accent, surfaces, border, dot) resolve
    from the active preset block — switch preset, both modes update. */
 body.dark {
-  --c-bg     : #0a0c12;
+  --c-bg     : #0b0f16;
   --c-surf   : var(--c-surf-dark);     /* from active preset */
   --c-surf2  : var(--c-surf2-dark);    /* from active preset */
   --c-accent : var(--c-accent-dark);   /* from active preset */
-  --c-text   : #d3dae6;
-  --c-head   : #edf2f7;
-  --c-muted  : #7a8fa8;
-  --c-subtle : #475669;
+  --c-text   : #e8edf4;
+  --c-head   : #f5f7fa;
+  --c-muted  : #a0adb8;
+  --c-subtle : #5a6a7a;
   --c-border : var(--c-border-dk);     /* from active preset */
   --c-dot    : var(--c-dot-dk);        /* from active preset */
   --c-title-accent: var(--c-title-accent-dark);
@@ -199,6 +206,61 @@ a:hover { border-bottom-color: var(--c-accent); }
   line-height: 1;
 }
 .theme-btn:hover { color: var(--c-head); }
+
+/* ── Sticky section nav (built by JS from h2.section-label) ── */
+.sticky-nav {
+  position              : fixed;
+  top                   : 16px;
+  right                 : 20px;
+  display               : flex;
+  align-items           : center;
+  gap                   : 2px;
+  z-index               : 1000;
+  background            : rgba(255, 255, 255, 0.90);
+  backdrop-filter       : blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border                : 1px solid var(--c-border);
+  border-radius         : 100px;
+  padding               : 6px 10px;
+  box-shadow            : 0 1px 10px rgba(0, 0, 0, 0.07);
+}
+
+body.dark .sticky-nav {
+  background : rgba(11, 15, 22, 0.92);
+}
+
+.sticky-nav__link {
+  font-size      : 13px;
+  font-weight    : 600;
+  color          : var(--c-muted);
+  padding        : 6px 12px;
+  border-radius  : 100px;
+  text-decoration: none;
+  border         : none;
+  white-space    : nowrap;
+  line-height    : 1;
+  transition     : color .15s, background .15s;
+}
+.sticky-nav__link:hover {
+  color         : var(--c-head);
+  background    : var(--c-surf);
+  border-bottom : none;
+}
+
+.sticky-nav__sep {
+  width      : 1px;
+  height     : 16px;
+  background : var(--c-border);
+  flex-shrink: 0;
+  margin     : 0 4px;
+}
+
+.sticky-nav .theme-btn {
+  font-size : 18px;
+  padding   : 6px 10px;
+  color     : var(--c-muted);
+}
+.sticky-nav .theme-btn:hover { color: var(--c-head); }
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -438,6 +500,49 @@ body.dark .hero-img--dark {
   display : block;
 }
 
+/* ── Hero fig + Algorithm side-by-side ── */
+.hero-alg-row {
+  display     : flex;
+  align-items : stretch;
+  gap         : 32px;
+  margin      : 26px 0;
+}
+
+.hero-alg-row__fig {
+  flex           : 1 1 0;
+  min-width      : 0;
+  display        : flex;
+  flex-direction : column;
+}
+
+.hero-alg-row .hero-img-pair {
+  margin-top    : auto;
+  margin-bottom : 8px;
+  width         : 100%;
+}
+
+.hero-alg-row .hero-img-pair .hero-img {
+  width     : 100%;
+  max-width : none;
+}
+
+.hero-alg-row .latex-algorithm {
+  flex      : 1 1 0;
+  min-width : 0;
+  max-width : none;
+  margin    : 0;
+}
+
+@media (max-width: 720px) {
+  .hero-alg-row {
+    flex-direction : column;
+  }
+
+  .hero-alg-row .latex-algorithm {
+    margin-top : 20px;
+  }
+}
+
 
 /* ══════════════════════════════════════════════════════════════
  * SECTION 8 · TL;DR BLOCK
@@ -446,13 +551,11 @@ body.dark .hero-img--dark {
  * ══════════════════════════════════════════════════════════════ */
 
 .tldr {
-  font-size    : var(--text-lg);
-  font-weight  : 500;
-  line-height  : 1.65;
-  color        : var(--c-head);
-  border-left  : 3px solid var(--c-accent);
-  padding-left : 15px;
-  margin       : 26px 0 30px;
+  font-size   : var(--text-lg);
+  font-weight : 500;
+  line-height : 1.65;
+  color       : var(--c-head);
+  margin      : 26px 0 30px;
 }
 .tldr strong { color: var(--c-accent); font-weight: 700; }
 
@@ -506,25 +609,14 @@ body.dark .hero-img--dark {
  * ══════════════════════════════════════════════════════════════ */
 
 h2.section-label {
-  display        : flex;
-  align-items    : center;
-  gap            : 9px;
   font-size      : var(--text-h2);
-  font-weight    : 700;
+  font-weight    : 800;
   text-transform : uppercase;
-  letter-spacing : .09em;
-  color          : var(--c-muted);
-  margin         : 52px 0 18px;
-}
-/* Dark typographic bar — editorial, not a colour accent */
-h2.section-label::before {
-  content       : '';
-  display       : inline-block;
-  width         : 3px;
-  height        : 14px;
-  background    : var(--c-head);
-  border-radius : 2px;
-  flex-shrink   : 0;
+  letter-spacing : .04em;
+  color          : var(--c-head);
+  margin         : 52px 0 20px;
+  padding-bottom : 12px;
+  border-bottom  : 1px solid var(--c-border);
 }
 
 h3.sub-label {
@@ -657,32 +749,36 @@ p:last-child { margin-bottom: 0; }
 
 .latex-algorithmic li {
   counter-increment : alg-line;
-  position          : relative;
-  display           : block;
-  min-height        : 1.45em;
-  padding           : 1px 0 1px 42px;
+  display           : flex;
+  align-items       : baseline;
+  padding           : 3px 0;
   color             : var(--c-text);
-  text-align        : left;
   hyphens           : none;
 }
 
 .latex-algorithmic li::before {
-  content     : counter(alg-line) ":";
-  position    : absolute;
-  left        : 0;
-  top         : 1px;
-  width       : 30px;
-  text-align  : right;
-  color       : var(--c-muted);
-  font-size   : var(--text-sm);
+  content      : counter(alg-line) ":";
+  flex-shrink  : 0;
+  width        : 30px;
+  text-align   : right;
+  padding-right: 10px;
+  color        : var(--c-muted);
+  font-size    : var(--text-sm);
+  line-height  : inherit;
 }
 
 .latex-algorithmic .alg-indent {
-  padding-left : 62px;
+  padding-left : 20px;
 }
 
 .latex-algorithmic .alg-indent::before {
-  left : 20px;
+  margin-left : -20px;
+}
+
+.alg-highlight {
+  background : color-mix(in srgb, var(--c-accent) 8%, transparent);
+  box-shadow : inset 3px 0 0 var(--c-accent);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
 }
 
 .alg-keyword {
@@ -795,11 +891,12 @@ body.dark .fig-img-switch .fig-img--dark {
 
 figcaption {
   font-size     : var(--text-sm);
+  font-style    : italic;
   color         : var(--c-muted);
   line-height   : 1.55;
   margin-bottom : 26px;
 }
-figcaption strong { color: var(--c-text); }
+figcaption strong { color: var(--c-text); font-style: normal; }
 
 
 
@@ -811,6 +908,7 @@ figcaption strong { color: var(--c-text); }
 
 .booktabs-table figcaption {
   font-size     : var(--text-sm);
+  font-style    : italic;
   color         : var(--c-muted);
   line-height   : 1.55;
   margin-bottom : 12px;
@@ -913,7 +1011,7 @@ pre {
   border        : 1px solid var(--c-border);
   border-radius : var(--r-lg);
   padding       : 18px 20px;
-  font-size     : var(--text-sm);
+  font-size     : 12px;
   line-height   : 1.65;
   overflow-x    : auto;
   white-space   : pre;
