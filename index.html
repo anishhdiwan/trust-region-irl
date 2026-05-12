@@ -176,101 +176,9 @@
        Edit the text between the <p class="tldr"> tags.
        ═══════════════════════════════════════════════════════ -->
   <p class="tldr ap">
-    <strong>TL;DR</strong>&ensp;We present an inverse RL method that optimizes the IRL Lagrangian dual using local trust-region policy updates and a reward correction step. The key insight is that a trust-region-optimal policy for one reward update can be globally optimal for a smaller update in the same direction, yielding monotonic improvement and global reward learning.
-
+    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian ($\text{KL} + \text{H}$) and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Unlike prior works which only optimize the primal, our method yeilds monotonic performance improvement and can learn global reward functions. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction.
   </p>
 
-
-  <!-- ═══════════════════════════════════════════════════════
-       HERO FIGURE
-       · Now:  <div class="hero-ph"> placeholder
-       · Later: replace entire <div class="hero-ph">...</div>
-                with <img class="hero-img" src="..." alt="...">
-       See HOW_TO_EDIT.md → "Replacing the hero figure"
-       ═══════════════════════════════════════════════════════ -->
-<div class="hero-alg-row">
-  <div class="hero-alg-row__fig">
-    <div class="hero-img-pair ap" aria-label="TRIRL hero figure">
-      <img
-        class="hero-img hero-img--light"
-        src="static/figures/correction_illustration.svg"
-        alt="TRIRL vs. MCE-IRL: trust-region update and reward correction for monotonic improvement">
-
-      <img
-        class="hero-img hero-img--dark"
-        src="static/figures/correction_illustration_light.svg"
-        alt="TRIRL vs. MCE-IRL: trust-region update and reward correction for monotonic improvement">
-    </div>
-
-    <p class="ap" style="font-size:12px; color:var(--c-subtle); text-align:center; margin-bottom:0; font-style:italic;">
-      TRIRL uses cheap, trust-region policy updates and corrects the reward to account for this local policy optimization.
-    </p>
-  </div>
-
-<figure class="latex-algorithm ap" id="alg-rewardCorrection">
-  <figcaption class="latex-algorithm__caption">
-    <span class="latex-algorithm__label">Algorithm</span>
-    <span class="latex-algorithm__title">Trust Region Inverse RL</span>
-  </figcaption>
-
-  <ol class="latex-algorithmic">
-    <li>
-      <span class="alg-keyword">Initialize:</span>
-      \(\epsilon\) ; \(r^{(0)} = 0.0\) ; \(\pi^{(0)} = \text{unif.}\)
-    </li>
-
-    <li>
-      <span class="alg-keyword">Output:</span>
-      \(r^\star\) and \(\pi^\star\)
-    </li>
-
-    <li>
-      <span class="alg-keyword">repeat</span>
-    </li>
-
-    <li class="alg-indent">
-      rollout \(\pi^{(i)}\) ; learn
-      \(D^{(i)} \approx \log\!\left(\frac{\rho_E}{\rho_{\pi^{(i)}}}\right)\)
-    </li>
-
-    <li class="alg-indent alg-highlight">
-      \(\tilde{r}^{(i+1)} = (1-\epsilon) r^{(i)} + \epsilon \beta D^{(i)}\)
-      <!-- <span class="alg-ref">Eq. reward update</span> -->
-    </li>
-
-    <li class="alg-indent alg-highlight">
-      \(\pi_{\text{tr}}^{(i+1)}\) &amp; \(\eta^{(i+1)} \gets\)
-      trust region policy update
-    </li>
-
-    <li class="alg-indent">
-      \(\epsilon_{\text{tr}} =
-      \frac{\epsilon}{\left( 1 + \eta^{(i+1)} \right)}\)
-    </li>
-
-    <li class="alg-indent alg-highlight">
-      \(r^{(i+1)} =
-      (1-\epsilon_{\text{tr}}) r^{(i)}
-      + \epsilon_{\text{tr}} \beta D^{(i)}\)
-    </li>
-
-    <li class="alg-indent">
-      \(\pi_{\text{tr}} \text{ on } \tilde{r}^{(i+1)}
-      \equiv
-      \pi_{\text{MCE}} \text{ on } r^{(i+1)}\)
-    </li>
-
-    <li class="alg-indent">
-      \(r^{(i)} \gets r^{(i+1)}\) ;
-      \(\pi^{(i)} \gets \pi_{\text{tr}}^{(i+1)}\)
-    </li>
-
-    <li>
-      <span class="alg-keyword">until</span> converged
-    </li>
-  </ol>
-</figure>
-</div><!-- /hero-alg-row -->
 
 
 
@@ -307,6 +215,40 @@
 
   </div> -->
   <!-- /stats -->
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       TEASER FIGURES
+       Two figures side by side. Each has a light and dark SVG.
+       Add/swap src paths once the files are in static/figures/.
+       ═══════════════════════════════════════════════════════ -->
+  <div class="fig-pair">
+
+    <figure class="fig-img-pair">
+      <div class="fig-img-switch ap">
+        <img class="fig-img fig-img--light"
+             src="static/figures/KL_plot.svg"
+             alt="KL divergence plot">
+        <img class="fig-img fig-img--dark"
+             src="static/figures/KL_plot_light.svg"
+             alt="KL divergence plot">
+      </div>
+      <figcaption class="fig-caption-center ap"></figcaption>
+    </figure>
+
+    <figure class="fig-img-pair">
+      <div class="fig-img-switch ap">
+        <img class="fig-img fig-img--light"
+             src="static/figures/dual_plot.svg"
+             alt="Dual objective plot">
+        <img class="fig-img fig-img--dark"
+             src="static/figures/dual_plot_light.svg"
+             alt="Dual objective plot">
+      </div>
+      <figcaption class="fig-caption-center ap"></figcaption>
+    </figure>
+
+  </div><!-- /fig-pair -->
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -480,6 +422,95 @@
   <p class="ap">
     Hence, we use a novel mechanic for IRL: <strong> instead of finding a max-ent optimal policy for the updated reward, we find a trust region optimal policy for this reward, and correct the reward function to account for the fact that our policy was only optimized locally.</strong>
   </p>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       FIGURE + ALGORITHM ROW
+       ═══════════════════════════════════════════════════════ -->
+<div class="fig-alg-row">
+  <div class="fig-alg-row__fig">
+    <div class="fig-img-switch ap" aria-label="TRIRL correction illustration">
+      <img
+        class="fig-img fig-img--light"
+        src="static/figures/correction_illustration.svg"
+        alt="TRIRL vs. MCE-IRL: trust-region update and reward correction for monotonic improvement">
+
+      <img
+        class="fig-img fig-img--dark"
+        src="static/figures/correction_illustration_light.svg"
+        alt="TRIRL vs. MCE-IRL: trust-region update and reward correction for monotonic improvement">
+    </div>
+
+    <p class="ap" style="font-size:12px; color:var(--c-subtle); text-align:center; margin-bottom:0; font-style:italic;">
+      TRIRL uses cheap, trust-region policy updates and corrects the reward to account for this local policy optimization.
+    </p>
+  </div>
+
+<figure class="latex-algorithm ap" id="alg-rewardCorrection">
+  <figcaption class="latex-algorithm__caption">
+    <span class="latex-algorithm__label">Algorithm</span>
+    <span class="latex-algorithm__title">Trust Region Inverse RL</span>
+  </figcaption>
+
+  <ol class="latex-algorithmic">
+    <li>
+      <span class="alg-keyword">Initialize:</span>
+      \(\epsilon\) ; \(r^{(0)} = 0.0\) ; \(\pi^{(0)} = \text{unif.}\)
+    </li>
+
+    <li>
+      <span class="alg-keyword">Output:</span>
+      \(r^\star\) and \(\pi^\star\)
+    </li>
+
+    <li>
+      <span class="alg-keyword">repeat</span>
+    </li>
+
+    <li class="alg-indent">
+      rollout \(\pi^{(i)}\) ; learn
+      \(D^{(i)} \approx \log\!\left(\frac{\rho_E}{\rho_{\pi^{(i)}}}\right)\)
+    </li>
+
+    <li class="alg-indent alg-highlight">
+      \(\tilde{r}^{(i+1)} = (1-\epsilon) r^{(i)} + \epsilon \beta D^{(i)}\)
+      <!-- <span class="alg-ref">Eq. reward update</span> -->
+    </li>
+
+    <li class="alg-indent alg-highlight">
+      \(\pi_{\text{tr}}^{(i+1)}\) &amp; \(\eta^{(i+1)} \gets\)
+      trust region policy update
+    </li>
+
+    <li class="alg-indent">
+      \(\epsilon_{\text{tr}} =
+      \frac{\epsilon}{\left( 1 + \eta^{(i+1)} \right)}\)
+    </li>
+
+    <li class="alg-indent alg-highlight">
+      \(r^{(i+1)} =
+      (1-\epsilon_{\text{tr}}) r^{(i)}
+      + \epsilon_{\text{tr}} \beta D^{(i)}\)
+    </li>
+
+    <li class="alg-indent">
+      \(\pi_{\text{tr}} \text{ on } \tilde{r}^{(i+1)}
+      \equiv
+      \pi_{\text{MCE}} \text{ on } r^{(i+1)}\)
+    </li>
+
+    <li class="alg-indent">
+      \(r^{(i)} \gets r^{(i+1)}\) ;
+      \(\pi^{(i)} \gets \pi_{\text{tr}}^{(i+1)}\)
+    </li>
+
+    <li>
+      <span class="alg-keyword">until</span> converged
+    </li>
+  </ol>
+</figure>
+</div><!-- /fig-alg-row -->
+
 
 
   <!-- ═══════════════════════════════════════════════════════

@@ -432,101 +432,37 @@ body.dark .affil-logo--dark {
 
 
 /* ══════════════════════════════════════════════════════════════
- * SECTION 7 · HERO FIGURE
- * Dot-grid placeholder; swap .hero-ph for .hero-img when ready.
+ * SECTION 7 · FIGURE + ALGORITHM ROW
+ * Side-by-side layout for a figure and an algorithm block.
+ * Collapses to a single column on mobile (≤ 720px).
  * ══════════════════════════════════════════════════════════════ */
 
-/* Placeholder version — remove this once you have a real figure */
-.hero-ph {
-  width            : 100%;
-  min-height       : 210px;
-  background-color : var(--c-surf2);
-  background-image : radial-gradient(circle, var(--c-dot) 1px, transparent 1px);
-  background-size  : 22px 22px;
-  border           : 1px solid var(--c-border);
-  border-radius    : var(--r-lg);
-  display          : flex;
-  flex-direction   : column;
-  align-items      : center;
-  justify-content  : center;
-  gap              : 6px;
-  margin           : 26px 0 8px;
-  padding          : 48px 20px;
-  text-align       : center;
-}
-.hero-ph__label {
-  font-size      : var(--text-xs);
-  font-weight    : 700;
-  text-transform : uppercase;
-  letter-spacing : .10em;
-  color          : var(--c-muted);
-}
-.hero-ph__hint {
-  font-size  : var(--text-sm);
-  color      : var(--c-muted);
-  font-style : italic;
-}
-
-/* Real figure version — add class="hero-img" to your <img> tag */
-.hero-img {
-  width         : 70%;
-  /* border-radius : var(--r-lg);
-  border        : 1px solid var(--c-border); */
-  margin        : 26px 0 8px;
-}
-
-.hero-img-pair {
-  display         : flex;
-  justify-content : center;
-  align-items     : center;
-  margin          : 26px auto 8px;
-}
-
-.hero-img-pair .hero-img {
-  width     : 70%;
-  max-width : 960px; /* adjust this: try 900–1000px */
-  margin    : 0 auto;
-}
-
-.hero-img--dark {
-  display : none;
-}
-
-body.dark .hero-img--light {
-  display : none;
-}
-
-body.dark .hero-img--dark {
-  display : block;
-}
-
-/* ── Hero fig + Algorithm side-by-side ── */
-.hero-alg-row {
+.fig-alg-row {
   display     : flex;
   align-items : stretch;
   gap         : 32px;
   margin      : 26px 0;
 }
 
-.hero-alg-row__fig {
+.fig-alg-row__fig {
   flex           : 1 1 0;
   min-width      : 0;
   display        : flex;
   flex-direction : column;
 }
 
-.hero-alg-row .hero-img-pair {
+.fig-alg-row .fig-img-switch {
   margin-top    : auto;
   margin-bottom : 8px;
   width         : 100%;
 }
 
-.hero-alg-row .hero-img-pair .hero-img {
+.fig-alg-row .fig-img-switch .fig-img {
   width     : 100%;
   max-width : none;
 }
 
-.hero-alg-row .latex-algorithm {
+.fig-alg-row .latex-algorithm {
   flex      : 1 1 0;
   min-width : 0;
   max-width : none;
@@ -534,11 +470,11 @@ body.dark .hero-img--dark {
 }
 
 @media (max-width: 720px) {
-  .hero-alg-row {
+  .fig-alg-row {
     flex-direction : column;
   }
 
-  .hero-alg-row .latex-algorithm {
+  .fig-alg-row .latex-algorithm {
     margin-top : 20px;
   }
 }
@@ -886,6 +822,32 @@ body.dark .fig-img-switch .fig-img--dark {
   text-align    : center;
   hyphens       : none;
   margin-bottom : 26px;
+}
+
+/* Two figures side by side — each child takes equal width.
+   Collapses to a single column on mobile (≤ 720px). */
+.fig-pair {
+  display     : flex;
+  align-items : center;
+  gap         : 28px;
+  margin      : 26px 0;
+}
+
+.fig-pair > figure {
+  flex      : 1 1 0;
+  min-width : 0;
+  margin    : 0;
+}
+
+.fig-pair .fig-img-switch {
+  width  : 70%;
+  margin : 0 auto;
+}
+
+@media (max-width: 720px) {
+  .fig-pair {
+    flex-direction : column;
+  }
 }
 
 
