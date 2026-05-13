@@ -377,7 +377,7 @@
     </div>
   </div> -->
 
-    <br>
+  <br>
 
   <p class="ap">
     TRIRL can learn a global reward function that captures the expert's intrinsic motivations, rather than rewarding the agent just for duplicating the specific state transitions executed by the expert. We demonstrate this using retraining and transfer experiments, by re-optimizing the learnt rewards under changed dynamics.
@@ -476,7 +476,24 @@
     </div>
   </figure>
 
-
+    <!-- Video demos: Ant transfer -->
+  <div class="video-grid video-grid--mujoco ap" style="--mujoco-cols:2; max-width:400px">
+    <div class="video-col">
+      <div class="video-col-title">Ant</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_ant.mp4" autoplay loop muted playsinline
+               aria-label="Ant imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">Ant Disabled</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_ant_disabled.mp4" autoplay loop muted playsinline
+               aria-label="Ant disabled transfer"></video>
+      </div>
+    </div>
+  </div>
+  <figcaption class="fig-caption-center ap">TRIRL's global reward function captures the intrinsic motivations of the expert, i.e. moving forward. Notice the Ant Disabled agent learning new behaviour (turning and using front legs) to optimize the learnt reward under new dynamics (short/inactive legs).</figcaption>
 
 
   <!-- ═══════════════════════════════════════════════════════
@@ -654,13 +671,6 @@
     const dark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('trirl-theme', dark ? 'dark' : 'light');
     icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
-  });
-
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ({ matches }) => {
-    if (!localStorage.getItem('trirl-theme')) {
-      document.documentElement.classList.toggle('dark', matches);
-      icon.className = matches ? 'fas fa-sun' : 'fas fa-moon';
-    }
   });
 
   // Sticky section nav — auto-built from every h2.section-label on the page.
