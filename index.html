@@ -15,9 +15,9 @@
   <meta name="author"
         content="Anish Diwan, Davide Tateo, Christopher E. Mower, Haitham Bou-Ammar, Jan Peters, Oleg Arenz">
 
-  <link rel="icon" href="static/figures/favicon.png" type="image/svg+xml">
-  <link rel="alternate icon" href="static/figures/favicon.png" type="image/png">
-  <link rel="apple-touch-icon" href="static/figures/apple-touch-icon.png">
+  <link rel="icon" href="static/figures/icml-navbar-logo.svg" type="image/svg+xml">
+  <link rel="alternate icon" href="static/figures/icml-navbar-logo.svg" type="image/png">
+  <link rel="apple-touch-icon" href="static/figures/icml-navbar-logo.svg">
 
   <link rel="canonical" href="https://[GITHUB_USERNAME].github.io/trust-region-irl/">
 
@@ -155,7 +155,7 @@
                  class="btn"             (outlined)
        ═══════════════════════════════════════════════════════ -->
   <div class="btns ap">
-    <a class="btn btn--primary" href="[PAPER_URL]">
+    <a class="btn btn--primary" href="https://arxiv.org/pdf/2605.11020">
       <i class="fas fa-file-alt"></i> Paper
     </a>
     <!-- <a class="btn" href="[CODE_URL]">
@@ -291,6 +291,65 @@
     TRIRL matches/outperforms all baselines in every environment, achieving an improvement of <strong>2.4&times;</strong> in terms of aggregate IQM.
   </figcaption>
 </figure>
+
+  <!-- Video demos: G1 Walk, G1 Run, Go2 -->
+  <div class="video-grid ap">
+    <div class="video-col">
+      <div class="video-col-title">G1 Walk</div>
+      <div class="video-wrapper">
+        <video src="static/videos/g1_walk.mp4" autoplay loop muted playsinline
+               aria-label="Unitree G1 walking imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">G1 Run</div>
+      <div class="video-wrapper">
+        <video src="static/videos/g1_run.mp4" autoplay loop muted playsinline
+               aria-label="Unitree G1 running imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">Go2</div>
+      <div class="video-wrapper">
+        <video src="static/videos/go2.mp4" autoplay loop muted playsinline
+               aria-label="Unitree Go2 quadruped imitation"></video>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video demos: MuJoCo benchmarks -->
+  <div class="video-grid video-grid--mujoco ap">
+    <div class="video-col">
+      <div class="video-col-title">Ant</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_ant.mp4" autoplay loop muted playsinline
+               aria-label="Ant imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">HalfCheetah</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_half_cheetah.mp4" autoplay loop muted playsinline
+               aria-label="HalfCheetah imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">Hopper</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_hopper.mp4" autoplay loop muted playsinline
+               aria-label="Hopper imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">Walker2d</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_walker2d.mp4" autoplay loop muted playsinline
+               aria-label="Walker2d imitation"></video>
+      </div>
+    </div>
+  </div>
+
+    <br>
 
   <p class="ap">
     TRIRL can learn a global reward function that captures the expert's intrinsic motivations, rather than rewarding the agent just for duplicating the specific state transitions executed by the expert. We demonstrate this using retraining and transfer experiments, by re-optimizing the learnt rewards under changed dynamics.
