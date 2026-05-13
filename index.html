@@ -16,18 +16,19 @@
         content="Anish Diwan, Davide Tateo, Christopher E. Mower, Haitham Bou-Ammar, Jan Peters, Oleg Arenz">
 
   <link rel="icon" href="static/figures/icml-navbar-logo.svg" type="image/svg+xml">
-  <link rel="alternate icon" href="static/figures/icml-navbar-logo.svg" type="image/png">
+  <link rel="alternate icon" href="static/figures/icml-navbar-logo.svg" type="image/svg">
   <link rel="apple-touch-icon" href="static/figures/icml-navbar-logo.svg">
 
-  <link rel="canonical" href="https://[GITHUB_USERNAME].github.io/trust-region-irl/">
+  <link rel="canonical" href="https://anishhdiwan.github.io/trust-region-irl/">
 
   <meta property="og:type"        content="article">
   <meta property="og:title"       content="Trust Region Inverse Reinforcement Learning: Explicit Dual Ascent using Local Policy Updates | ICML 2026">
   <meta property="og:description" content="Explicit optimization of the IRL Lagrangian dual using local policy updates and a reward correction step.">
-  <meta property="og:url"         content="https://[GITHUB_USERNAME].github.io/trust-region-irl/">
-  <meta property="og:image"       content="https://[GITHUB_USERNAME].github.io/trust-region-irl/static/og.png">
+  <meta property="og:url"         content="https://anishhdiwan.github.io/trust-region-irl/">
+  <meta property="og:image"       content="https://anishhdiwan.github.io/trust-region-irl/static/og.png">
 
   <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:image" content="https://anishhdiwan.github.io/trust-region-irl/static/correction_illustration.svg">
   <meta name="twitter:title"       content="Trust Region Inverse Reinforcement Learning: Explicit Dual Ascent using Local Policy Updates | ICML 2026">
   <meta name="twitter:description" content="An inverse RL method with monotonic performance improvement and global reward learning that outperforms state-of-the-art IL methods. Based on explicit optimization of the IRL Lagrangian dual using local policy updates and a reward correction step. ICML 2026">
 
@@ -81,7 +82,7 @@
        NAVIGATION BAR
        ═══════════════════════════════════════════════════════ -->
   <nav class="site-nav ap">
-    <a href="[PORTFOLIO_URL]" class="nav-back">← Back</a>
+    <a href="https://anishhdiwan.github.io/" class="nav-back">← Back</a>
     <button id="theme-btn" class="theme-btn" aria-label="Toggle dark mode">
       <i class="fas fa-moon"></i>
     </button>
@@ -280,7 +281,6 @@
   <div class="prose">
     <p class="ap">
     Inverse reinforcement learning (IRL) is typically formulated as maximizing entropy subject to matching the distribution of expert trajectories. Classical (dual-ascent) IRL guarantees monotonic performance improvement but requires fully solving an RL problem each iteration to compute dual gradients. More recent adversarial methods avoid this cost at the expense of stability and monotonic dual improvement, by directly optimizing the primal problem and using a discriminator to provide rewards. In this work, we bridge the gap between these approaches by enabling monotonic improvement of the reward function and policy without having to fully solve an RL problem at every iteration. Our key theoretical insight is that a trust-region-optimal policy for a reward function update can be globally optimal for a smaller update in the same direction. This smaller update allows us to explicitly optimize the dual objective while only relying on a local search around the current policy. In doing so, our approach avoids the training instabilities of adversarial methods, offers monotonic performance improvement, and learns a reward function in the traditional sense of IRL---one that can be globally optimized to match expert demonstrations. Our proposed algorithm, <strong>Trust Region Inverse Reinforcement Learning (TRIRL)</strong>, outperforms state-of-the-art imitation learning methods across multiple challenging tasks by a factor of 2.4x in terms of aggregate inter-quartile mean, while recovering reward functions that generalize to system dynamics shifts. 
-    </p>
     </p>
   </div>
 
