@@ -176,7 +176,7 @@
        Edit the text between the <p class="tldr"> tags.
        ═══════════════════════════════════════════════════════ -->
   <p class="tldr ap">
-    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian ($\text{KL} + \text{H}$) and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Unlike prior works which only optimize the primal, our method yeilds monotonic performance improvement and can learn global reward functions. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction.
+    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian ($\text{H} - \text{KL}$) and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Unlike prior works which only optimize the primal, our method yeilds monotonic performance improvement and can learn global reward functions. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction.
   </p>
 
 
@@ -345,6 +345,13 @@
       <div class="video-wrapper">
         <video src="static/videos/mujoco_walker2d.mp4" autoplay loop muted playsinline
                aria-label="Walker2d imitation"></video>
+      </div>
+    </div>
+    <div class="video-col">
+      <div class="video-col-title">Humanoid</div>
+      <div class="video-wrapper">
+        <video src="static/videos/mujoco_humanoid.mp4" autoplay loop muted playsinline
+               aria-label="Humanoid imitation"></video>
       </div>
     </div>
   </div>

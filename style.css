@@ -840,7 +840,7 @@ body.dark .fig-img-switch .fig-img--dark {
 }
 
 .fig-pair .fig-img-switch {
-  width  : 70%;
+  width  : 60%;
   margin : 0 auto;
 }
 
@@ -1112,8 +1112,11 @@ hr {
 }
 
 .video-grid--mujoco {
-  grid-template-columns : repeat(4, 1fr);
-  max-width             : 440px;
+  /* To add another video: increment --mujoco-cols by 1. */
+  --mujoco-cols         : 5;
+  grid-template-columns : repeat(var(--mujoco-cols), 1fr);
+  /* 101px per column + 12px gap between each column */
+  max-width             : calc(var(--mujoco-cols) * 101px + (var(--mujoco-cols) - 1) * 12px);
   margin-top            : 10px;
 }
 
