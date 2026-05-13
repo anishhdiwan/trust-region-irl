@@ -43,6 +43,16 @@
   <!-- Site styles — all config lives at the top of this file -->
   <link rel="stylesheet" href="style.css">
 
+  <!-- Must run in <head> to avoid flash of wrong theme on load -->
+  <script>
+    (function () {
+      var stored = localStorage.getItem('trirl-theme');
+      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
     <!-- math rendering -->
     <script>
       window.MathJax = {
@@ -90,6 +100,16 @@
     <span class="venue-tag__meta">2026</span>
   </span>
 
+  <!-- KEY MESSAGE BANNER -->
+  <div class="key-banner">
+    <svg class="key-banner__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M20 2H4C2.9 2 2 2.9 2 4v12c0 1.1.9 2 2 2h5l3 4 3-4h5c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+      <rect fill="white" x="11" y="5.5" width="2" height="6" rx="1"/>
+      <circle fill="white" cx="12" cy="14.5" r="1.1"/>
+    </svg>
+    <span class="key-banner__text">Key Takeaway : you don't need to repeatedly do full RL optimization for solving max-ent IRL!!</span>
+    <a href="#theory" class="key-banner__cta">See how →</a>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════
        LOGOS
@@ -130,6 +150,7 @@
       <img src="static/figures/rig_logo_light.svg" alt="Robotics Institute Germany (RIG)" class="affil-logo affil-logo--dark">
     </span>
   </div>
+
 
   <h1 class="site-title ap">
     <span class="title-accent">Trust Region Inverse Reinforcement Learning</span> : Explicit Dual Ascent using Local Policy Updates
@@ -176,7 +197,7 @@
        Edit the text between the <p class="tldr"> tags.
        ═══════════════════════════════════════════════════════ -->
   <p class="tldr ap">
-    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian ($\text{H} - \text{KL}$) and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Unlike prior works which only optimize the primal, our method yeilds monotonic performance improvement and can learn global reward functions. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction.
+    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Unlike prior works which only optimize the primal, our method yeilds monotonic performance improvement and can learn global reward functions. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction.
   </p>
 
 
@@ -318,7 +339,7 @@
   </div>
 
   <!-- Video demos: MuJoCo benchmarks -->
-  <div class="video-grid video-grid--mujoco ap">
+  <!-- <div class="video-grid video-grid--mujoco ap">
     <div class="video-col">
       <div class="video-col-title">Ant</div>
       <div class="video-wrapper">
@@ -354,7 +375,7 @@
                aria-label="Humanoid imitation"></video>
       </div>
     </div>
-  </div>
+  </div> -->
 
     <br>
 
@@ -626,14 +647,20 @@
   // Dark-mode toggle — persists across pages via localStorage
   const btn  = document.getElementById('theme-btn');
   const icon = btn.querySelector('i');
-  if (localStorage.getItem('trirl-theme') === 'dark') {
-    document.body.classList.add('dark');
+  if (document.documentElement.classList.contains('dark')) {
     icon.className = 'fas fa-sun';
   }
   btn.addEventListener('click', () => {
-    const dark = document.body.classList.toggle('dark');
+    const dark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('trirl-theme', dark ? 'dark' : 'light');
     icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+  });
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ({ matches }) => {
+    if (!localStorage.getItem('trirl-theme')) {
+      document.documentElement.classList.toggle('dark', matches);
+      icon.className = matches ? 'fas fa-sun' : 'fas fa-moon';
+    }
   });
 
   // Sticky section nav — auto-built from every h2.section-label on the page.

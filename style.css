@@ -120,7 +120,7 @@
    Only colour tokens override. Layout and type are inherited.
    All per-preset colours (accent, surfaces, border, dot) resolve
    from the active preset block — switch preset, both modes update. */
-body.dark {
+html.dark {
   --c-bg     : #0b0f16;
   --c-surf   : var(--c-surf-dark);     /* from active preset */
   --c-surf2  : var(--c-surf2-dark);    /* from active preset */
@@ -225,7 +225,7 @@ a:hover { border-bottom-color: var(--c-accent); }
   box-shadow            : 0 1px 10px rgba(0, 0, 0, 0.07);
 }
 
-body.dark .sticky-nav {
+html.dark .sticky-nav {
   background : rgba(11, 15, 22, 0.92);
 }
 
@@ -373,11 +373,11 @@ body.dark .sticky-nav {
   display : none;
 }
 
-body.dark .affil-logo--light {
+html.dark .affil-logo--light {
   display : none;
 }
 
-body.dark .affil-logo--dark {
+html.dark .affil-logo--dark {
   display : block;
 }
 
@@ -809,12 +809,12 @@ p:last-child { margin-bottom: 0; }
 }
 
 /* Dark mode: hide dark-text figure */
-body.dark .fig-img-switch .fig-img--light {
+html.dark .fig-img-switch .fig-img--light {
   display : none;
 }
 
 /* Dark mode: show light-text figure */
-body.dark .fig-img-switch .fig-img--dark {
+html.dark .fig-img-switch .fig-img--dark {
   display : block;
 }
 
@@ -1145,6 +1145,54 @@ hr {
   transition  : color .15s;
 }
 .site-footer a:hover { color: var(--c-accent); }
+
+
+/* ══════════════════════════════════════════════════════════════
+ * SECTION 17.5 · KEY MESSAGE BANNER
+ * ══════════════════════════════════════════════════════════════ */
+
+.key-banner {
+  display       : flex;
+  align-items   : center;
+  gap           : 14px;
+  background    : #fff5f5;
+  border        : 1.5px solid #fca5a5;
+  border-radius : var(--r-md);
+  padding       : 12px 18px;
+  margin-bottom : 24px;
+  flex-wrap     : wrap;
+}
+.key-banner__icon {
+  width       : 22px;
+  height      : 22px;
+  flex-shrink : 0;
+  color       : #e03131;
+}
+.key-banner__text {
+  font-size   : 15px;
+  font-weight : 600;
+  color       : #6b1a1a;
+  flex        : 1;
+  min-width   : 0;
+  line-height : 1.4;
+}
+.key-banner__cta {
+  font-size   : var(--text-sm);
+  font-weight : 600;
+  color       : #e03131;
+  border      : none;
+  white-space : nowrap;
+}
+.key-banner__cta:hover { color: #6b1a1a; border: none; }
+
+html.dark .key-banner {
+  background  : #1c0505;
+  border-color: #7f1d1d;
+}
+html.dark .key-banner__icon { color: #fc8181; }
+html.dark .key-banner__text { color: #fecaca; }
+html.dark .key-banner__cta  { color: #fc8181; }
+html.dark .key-banner__cta:hover { color: #fecaca; border: none; }
 
 
 /* ══════════════════════════════════════════════════════════════
