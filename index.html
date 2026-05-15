@@ -151,7 +151,7 @@
     <a href="https://anishhdiwan.github.io/">Anish Diwan</a> &middot;
     <a href="https://www.ias.informatik.tu-darmstadt.de/Team/DavideTateo">Davide Tateo</a> &middot;
     <a href="https://cmower.github.io/">Christopher E. Mower</a>
-    &middot; <a href="http://bouammar.com/blog/">Haitham Bou Ammar</a>
+    &middot; <a href="http://bouammar.com/blog/">Haitham Bou-Ammar</a>
     &middot; <a href="https://www.ias.tu-darmstadt.de/Team/JanPeters">Jan Peters</a>
     &middot; <a href="https://www.ias.informatik.tu-darmstadt.de/Team/OlegArenz">Oleg Arenz</a>
   </p>
@@ -197,7 +197,7 @@
        Edit the text between the <p class="tldr"> tags.
        ═══════════════════════════════════════════════════════ -->
   <p class="tldr ap">
-    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction. Our method yeilds monotonic performance improvement and can learn global reward functions.
+    <strong>TL;DR</strong>&ensp;We present an inverse RL method that explicitly optimizes the IRL Lagrangian and it's dual ($\mathcal{G}(r)$) using local trust-region policy updates and a reward correction step. Our <a href="#theory">key theoretical insight</a> is that a trust-region-optimal policy for a reward update can be globally optimal for a smaller update in the same direction. Our method yields monotonic performance improvement and can learn global reward functions.
   </p>
 
 
@@ -551,19 +551,19 @@
 
 <figure class="latex-algorithm ap" id="alg-rewardCorrection">
   <figcaption class="latex-algorithm__caption">
-    <span class="latex-algorithm__label">Algorithm</span>
+    <span class="latex-algorithm__label">Algorithm&nbsp;&nbsp;</span>
     <span class="latex-algorithm__title">Trust Region Inverse RL</span>
   </figcaption>
 
   <ol class="latex-algorithmic">
     <li>
-      <span class="alg-keyword">Initialize:</span>
-      \(\epsilon\) ; \(r^{(0)} = 0.0\) ; \(\pi^{(0)} = \text{unif.}\)
+      <span class="alg-keyword">Initialize: &nbsp;</span>
+      \(\epsilon\) &nbsp;;&nbsp; \(r^{(0)} = 0.0\) &nbsp;;&nbsp; \(\pi^{(0)} = \text{unif.}\)
     </li>
 
     <li>
-      <span class="alg-keyword">Output:</span>
-      \(r^\star\) and \(\pi^\star\)
+      <span class="alg-keyword">Output: &nbsp;</span>
+      \(r^\star\) &nbsp;and&nbsp; \(\pi^\star\)
     </li>
 
     <li>
@@ -571,8 +571,8 @@
     </li>
 
     <li class="alg-indent">
-      rollout \(\pi^{(i)}\) ; learn
-      \(D^{(i)} \approx \log\!\left(\frac{\rho_E}{\rho_{\pi^{(i)}}}\right)\)
+      rollout &nbsp; \(\pi^{(i)}\) &nbsp;;&nbsp; learn
+      &nbsp;\(D^{(i)} \approx \log\!\left(\frac{\rho_E}{\rho_{\pi^{(i)}}}\right)\)
     </li>
 
     <li class="alg-indent alg-highlight">
@@ -581,8 +581,8 @@
     </li>
 
     <li class="alg-indent alg-highlight">
-      \(\pi_{\text{tr}}^{(i+1)}\) &amp; \(\eta^{(i+1)} \gets\)
-      trust region policy update
+      \(\pi_{\text{tr}}^{(i+1)}\) &amp; &nbsp; \(\eta^{(i+1)} \gets\)
+      &nbsp; trust region policy update
     </li>
 
     <li class="alg-indent">
@@ -597,18 +597,18 @@
     </li>
 
     <li class="alg-indent">
-      \(\pi_{\text{tr}} \text{ on } \tilde{r}^{(i+1)}
+      \(\pi_{\text{tr}} &nbsp;\text{ on }&nbsp; \tilde{r}^{(i+1)}
       \equiv
-      \pi_{\text{MCE}} \text{ on } r^{(i+1)}\)
+      &nbsp;\pi_{\text{MCE}} &nbsp;\text{ on }&nbsp; r^{(i+1)}\)
     </li>
 
     <li class="alg-indent">
-      \(r^{(i)} \gets r^{(i+1)}\) ;
+      \(r^{(i)} \gets r^{(i+1)}\) &nbsp;;&nbsp;
       \(\pi^{(i)} \gets \pi_{\text{tr}}^{(i+1)}\)
     </li>
 
     <li>
-      <span class="alg-keyword">until</span> converged
+      <span class="alg-keyword">until &nbsp;</span> converged
     </li>
   </ol>
 </figure>
