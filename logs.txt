@@ -1,0 +1,57 @@
+ll four models/ directories are empty — there's no latest.model saved yet. That's the first thing to resolve before
+  you can visualize anything.
+
+  Why there's no checkpoint
+
+  Saving only happens at evaluation_and_save_frequency (trirl_ppo.py:700–702). Your run script uses the default
+  evaluation_and_save_frequency = -1, which resolves to saving only at the very end of total_timesteps=30e6 (line
+  74–75). All four runs are from today (10:54–12:25) — the NaN-diverging runs we just diagnosed — and none reached the
+  end, so nothing was written. So: you need to retrain to completion (now with the IK/reward fixes) before there's a
+  policy to view. Optionally pass --algorithm.evaluation_and_save_frequency=<steps> so it checkpoints periodically
+  instead of only at the end.
+
+  How visualization works (already built in)
+
+  The mechanism is fully there — no new code needed. The pieces:
+
+  - --runner.mode="test" → runner._test() calls model.test() (trirl_ppo.py:798), which rolls out the deterministic
+  policy (action = action_mean, line 826) and calls self.train_env.render(env_state) each step (836–837).
+  - --environment.render=True → FrankaPushT.__init__ opens the GLFW MujocoViewer (environment.py:157–159); render()
+  converts the mjx batched state to a single mj_data for env 0 and draws it (environment.py:404–407).
+  - --runner.load_model=<path>/latest.model → TRIRL_PPO.load() (trirl_ppo.py:770) unzips the checkpoint and restores
+  policy/critic.
+  - Test mode forbids wandb, tensorboard, and save_model (runner.py:358–363) — you must turn those off.
+
+  The command to run (once you have a checkpoint)
+
+  Same algorithm name you trained with (trirl_ppo_fb.flax_full_jit), small nr_envs since the viewer only shows env 0
+  and test() allocates 1000 × nr_envs arrays:
+
+  cd experiments
+  python experiment.py \
+      --algorithm.name="trirl_ppo_fb.flax_full_jit" \
+      --algorithm.data_path="/home/kukoboshi/PycharmProjects/trust-region-irl/trirl_dataset/rl_expert/expert_dataset_2d
+  _actions.npz" \
+      --environment.name="franka_pusht" \
+      --environment.nr_envs=1 \
+      --environment.render=True \
+      --environment.seed=0 \
+      --runner.mode="test" \
+      --runner.load_model="runs/trust_region_irl/pusht_trirl/<RUN_ID>/models/latest.model" \
+      --runner.track_tb=False \
+      --runner.track_wandb=False \
+      --runner.save_model=False \
+      --runner.project_name="trust_region_irl" \
+      --runner.exp_name="pusht_trirl"
+
+  Controls in the viewer: SPACE pause, TAB switch camera (static/follow), S/F slower/faster, mouse to orbit/zoom.
+
+  Suggested path forward
+
+  1. Re-run your training script (the NaN fixes are in place), and add
+  --algorithm.evaluation_and_save_frequency=1000000 (or similar) so a latest.model is written periodically rather than
+  only at 30M steps.
+  2. Once runs/.../models/latest.model exists, run the test command above with --runner.load_model pointing at it.
+
+  Want me to add the evaluation_and_save_frequency flag to experiments/run_experiment.sh and drop a ready-to-run
+  view_policy.sh next to it so you don't have to assemble the command by hand?

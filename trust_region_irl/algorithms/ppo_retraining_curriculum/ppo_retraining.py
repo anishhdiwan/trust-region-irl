@@ -18,6 +18,8 @@ from rl_x.algorithms.ppo.flax_full_jit.general_properties import GeneralProperti
 from rl_x.algorithms.ppo.flax_full_jit.policy import get_policy
 from rl_x.algorithms.ppo.flax_full_jit.critic import get_critic
 
+from trust_region_irl.algorithms.ppo_retraining import PPO_RETRAINING
+
 rlx_logger = logging.getLogger("rl_x")
 
 class Batch:
@@ -32,14 +34,14 @@ class Batch:
         self.advantages = advantages
         self.returns = returns
 
-class PPO_RETRAINING:
+class PPO_RETRAINING_CURRICULUM:
     def __init__(self, config, train_env, eval_env, run_path, writer, reward_function=None):
         self.config = config
         self.train_env = train_env
         self.eval_env = eval_env
         self.writer = writer
 
-        self.save_model = True
+        self.save_model = config.runner.save_model
         self.save_path = os.path.join(run_path, "models")
         self.track_console = config.runner.track_console
         self.track_tb = config.runner.track_tb
@@ -76,6 +78,29 @@ class PPO_RETRAINING:
 
         # Use the saved reward function
         self.reward_function = reward_function
+
+        # Determine the correct directory to look for theta_matrix.npy
+        if hasattr(config.runner, "load_model") and config.runner.load_model:
+            # Look in the folder of the model you are loading
+            model_folder = os.path.dirname(config.runner.load_model)
+        else:
+            # Fallback to the current run's save folder (e.g., run_path/models)
+            model_folder = self.save_path
+
+        theta_path = os.path.join(model_folder, "theta_matrix.npy")
+
+        # Upload the thetas
+        try:
+            # Add jnp.array() around the loaded numpy array
+            self.thetas = jnp.array(np.load(theta_path))
+            self.nr_thetas = self.thetas.shape[0]
+            rlx_logger.info(f"Loaded {self.nr_thetas} thetas from {theta_path} for Curriculum Learning.")
+        except Exception as e:
+            rlx_logger.error(f"Runtime Error: the thetas weren't found. Exception: {e}")
+            raise FileNotFoundError(f"Missing theta matrix")
+
+        self.nr_thetas = self.thetas.shape[0]
+        rlx_logger.info(f"Loaded {self.nr_thetas} thetas from {theta_path} for Curriculum Learning.")
 
         if self.evaluation_and_save_frequency % self.batch_size != 0:
             raise ValueError("Evaluation and save frequency must be a multiple of batch size")
@@ -124,7 +149,6 @@ class PPO_RETRAINING:
             self.latest_model_file_name = "latest.model"
             self.best_model_file_name = "best.model"
             self.best_eval_return = -np.inf
-            self.best_eval_steps = self.train_env.horizon
             self.latest_model_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
 
     def train(self):
@@ -142,6 +166,24 @@ class PPO_RETRAINING:
 
                 def learning_iteration(learning_iteration_carry, learning_iteration_step):
                     policy_state, critic_state, env_state, key = learning_iteration_carry
+
+                    current_global_iteration = (multi_learning_iteration_step * self.nr_updates_per_multi_learning_iteration) + learning_iteration_step
+                    total_iterations = self.nr_multi_learning_and_eval_save_iterations * self.nr_updates_per_multi_learning_iteration
+
+                    # 0.0 at the start of training, 1.0 at the end
+                    progress_fraction = current_global_iteration / jnp.maximum(1, total_iterations - 1)
+
+                    # Map fraction to an index in the theta matrix (e.g. 0 to N-1)
+                    continuous_idx = progress_fraction * (self.nr_thetas - 1)
+
+                    idx_low = jnp.floor(continuous_idx).astype(jnp.int32)
+                    idx_high = jnp.ceil(continuous_idx).astype(jnp.int32)
+                    alpha = continuous_idx - idx_low
+
+                    # Linearly interpolate between the two nearest thetas
+                    theta_low = self.thetas[idx_low]
+                    theta_high = self.thetas[idx_high]
+                    current_theta = (1.0 - alpha) * theta_low + alpha * theta_high
 
                     # Acting
                     def single_rollout(single_rollout_carry, _):
@@ -174,7 +216,7 @@ class PPO_RETRAINING:
                     states, next_states, actions, rewards, values, terminations, log_probs, infos = batch
 
                     # Use learnt reward
-                    rewards = self.reward_function(states, actions, next_states, terminations, log_probs)
+                    rewards = self.reward_function(current_theta, states, actions, next_states, terminations, log_probs)
 
                     # Calculating advantages and returns
                     def calculate_gae_advantages(critic_state, next_states, rewards, values, terminations):
@@ -288,6 +330,9 @@ class PPO_RETRAINING:
                     optimization_metrics["policy/std_dev"] = jnp.mean(
                         jnp.exp(policy_state.params["params"]["policy_logstd"]))
 
+                    optimization_metrics["curriculum/progress_fraction"] = progress_fraction
+                    optimization_metrics["curriculum/theta_mean"] = jnp.mean(current_theta)
+
                     # Logging
                     combined_metrics = {**infos, **optimization_metrics}
                     combined_metrics = tree.map_structure(lambda x: jnp.mean(x), combined_metrics)
@@ -358,38 +403,29 @@ class PPO_RETRAINING:
                             self.log(f"{key}", np.asarray(value), global_step)
                         self.end_logging()
 
-                    combined_learning_iteration_step = (
-                                                                   multi_learning_iteration_step + 1) * self.nr_updates_per_multi_learning_iteration
+                    combined_learning_iteration_step = (multi_learning_iteration_step + 1) * self.nr_updates_per_multi_learning_iteration
                     jax.debug.callback(callback, (eval_metrics, combined_learning_iteration_step))
 
-                # Saving
-                if self.save_model:
-                    # Fetch episode_return from eval_metrics, fallback to -inf if not evaluating
-                    eval_return_for_save = (eval_metrics["eval/episode_return"]
-                                            if self.evaluation_active else jnp.asarray(-jnp.inf))
-                    eval_steps_for_save = (eval_metrics["eval/episode_length"]
-                                  if self.evaluation_active else jnp.asarray(-jnp.inf))
+                    # Saving
+                    if self.save_model:
+                        # Fetch episode_return from eval_metrics, fallback to -inf if not evaluating
+                        eval_return_for_save = (eval_metrics["eval/episode_return"]
+                                                if self.evaluation_active else jnp.asarray(-jnp.inf))
 
-                    def save_with_check(policy_state, critic_state, eval_return, eval_steps):
-                        self.save(policy_state, critic_state)  # always save latest.model
+                        def save_with_check(policy_state, critic_state, eval_return):
+                            self.save(policy_state, critic_state)  # always save latest.model
 
-                        if self.evaluation_active:
-                            current_return = float(np.asarray(eval_return).reshape(-1)[0])
-                            current_steps = float(np.asarray(eval_steps).reshape(-1)[0])
+                            if self.evaluation_active:
+                                current_return = float(np.asarray(eval_return).reshape(-1)[0])
 
-                            # Check if the current return is GREATER than the best return
-                            if current_return > self.best_eval_return:
-                                self.best_eval_return = current_return
-                                self.save(policy_state, critic_state, file_name=self.best_model_file_name)
-                                rlx_logger.info(
-                                    f"[save-best] new best eval/episode_return={current_return:.4f} -> {self.best_model_file_name}")
-                            if current_steps < self.best_eval_steps:
-                                self.best_eval_steps = current_steps
-                                self.save(policy_state, critic_state, file_name="fastest.model")
-                                rlx_logger.info(
-                                    f"[save-fast] new fast eval/episode_return={current_return:.4f} -> fastest.model")
+                                # Check if the current return is GREATER than the best return
+                                if current_return > self.best_eval_return:
+                                    self.best_eval_return = current_return
+                                    self.save(policy_state, critic_state, file_name=self.best_model_file_name)
+                                    rlx_logger.info(
+                                        f"[save-best] new best eval/episode_return={current_return:.4f} -> {self.best_model_file_name}")
 
-                    jax.debug.callback(save_with_check, policy_state, critic_state, eval_return_for_save, eval_steps_for_save)
+                        jax.debug.callback(save_with_check, policy_state, critic_state, eval_return_for_save)
 
                 return (policy_state, critic_state, env_state, key), None
 

@@ -16,6 +16,7 @@ import optax
 import wandb
 import re
 
+from trust_region_irl.algorithms.ppo_retraining_curriculum import PPO_RETRAINING_CURRICULUM
 from trust_region_irl.algorithms.trirl_ppo_fb.flax_full_jit.general_properties import GeneralProperties
 from trust_region_irl.algorithms.trirl_ppo_fb.flax_full_jit.policy import get_policy
 from trust_region_irl.algorithms.trirl_ppo_fb.flax_full_jit.critic import get_critic
@@ -101,9 +102,15 @@ class TRIRL_PPO:
         self.reward_type = config.algorithm.reward_type
         self.num_data_samples = np.load(self.data_path)["states"].shape[0]
 
+        # Curriculum Thetas
+        # freq = self.nr_steps // N
+        self.thetas = []
+        self.theta_save_frequency = 1 # 1 for saving every theta collected
+        self.curriculum_learning_mode = config.algorithm.curriculum_learning
+
         if self.evaluation_and_save_frequency % self.batch_size != 0:
             raise ValueError("Evaluation and save frequency must be a multiple of batch size")
-        
+
         if self.nr_parallel_seeds > 1:
             raise ValueError("Parallel seeds are not supported yet. This is mainly limited by not being able to log mutliple wandb runs at the same time.")
 
@@ -163,10 +170,12 @@ class TRIRL_PPO:
         self.corrected_reward_state = self.discriminator_state
 
         if self.save_model:
-            os.makedirs(self.save_path)
+            os.makedirs(self.save_path, exist_ok=True)
             self.latest_model_file_name = "latest.model"
+            self.best_model_file_name = "best.model"      # lowest eval/task_err so far
+            self.best_eval_return = -np.inf
+            #self.best_eval_task_err = np.inf    # host-side tracker, updated in save callback
             self.latest_model_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-
 
     def train(self):
         def jitable_train_function(key, parallel_seed_id):
@@ -177,7 +186,7 @@ class TRIRL_PPO:
             # Expert demonstrations
             def _prepare_expert_data():
                 return prepare_expert_data(self.data_path)
-            
+
             demonstrations = jax.experimental.io_callback(_prepare_expert_data, expert_data_spec(num_samples=self.num_data_samples, state_dim=self.train_env.single_observation_space.shape[0], action_dim=self.train_env.single_action_space.shape[0]))
             expert_states = demonstrations["states"]
             expert_next_states = demonstrations["next_states"]
@@ -201,7 +210,7 @@ class TRIRL_PPO:
                     (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features), \
                     env_state, key = learning_iteration_carry
 
-                    # Acting
+                        # Acting
                     def single_rollout(single_rollout_carry, _):
                         policy_state, critic_state, env_state, key = single_rollout_carry
 
@@ -217,11 +226,10 @@ class TRIRL_PPO:
 
                         env_state = self.train_env.step(env_state, processed_action)
                         transition = (observation, env_state.actual_next_observation, action, env_state.reward, value, env_state.terminated, log_prob, action_mean, action_logstd, env_state.info)
-
                         if self.render:
                             def render(env_state):
                                 return self.train_env.render(env_state)
-                            
+
                             env_state = jax.experimental.io_callback(render, env_state, env_state)
 
                         return (policy_state, critic_state, env_state, key), transition
@@ -258,12 +266,17 @@ class TRIRL_PPO:
                             def energy_single(z):
                                 return disc_energy_from_z_apply(discriminator_params, z)
 
-                            score = jax.vmap(lambda z: -jax.grad(energy_single)(z))(noisy_z)
+                            # trirl_loss_fn is vmapped per-sample, so noisy_z is a single
+                            # latent vector (latent_dim,), not a batch. grad of the scalar
+                            # energy w.r.t. it already yields the (latent_dim,) score; the
+                            # original jax.vmap here iterated over the latent dim -> fed
+                            # scalars into energy_from_z -> shape[-1] IndexError.
+                            score = -jax.grad(energy_single)(noisy_z)
                             target = -(noisy_z - expert_z) / (sigma ** 2)
                             return 0.5 * jnp.mean(jnp.sum(jnp.square(score - target), axis=-1))
 
 
-                    def trirl_loss_fn(discriminator_params, state, action, expert_state, expert_action, label, expert_label, 
+                    def trirl_loss_fn(discriminator_params, state, action, expert_state, expert_action, label, expert_label,
                                         next_state=None, absorbing=None, expert_next_state=None, expert_absorbing=None, feature=None, expert_feature=None, rng=None):
                         logits = self.discriminator.apply(discriminator_params, feature, state, action, next_state, absorbing)
                         expert_logits = self.discriminator.apply(discriminator_params, expert_feature, expert_state, expert_action, expert_next_state, expert_absorbing)
@@ -277,9 +290,9 @@ class TRIRL_PPO:
                         interpolated_action = alpha * expert_action + (1 - alpha) * action
                         interpolated_next_state = alpha * expert_next_state + (1 - alpha) * next_state
                         interpolated_abs = 0.0 * expert_absorbing # assume interpolated state to be non-absorbing
-                        interpolated_feature = alpha * expert_feature + (1 - alpha) * feature                
-                        grad_feature, grad_state, grad_action, grad_next_state = jax.grad(lambda f, s, a, sn, ab: jnp.sum(self.discriminator.apply(discriminator_params, f, s, a, sn, ab)), argnums=(0, 1, 2, 3))(interpolated_feature, interpolated_state, interpolated_action, interpolated_next_state, interpolated_abs)                
-                        grad_norm = jnp.sqrt(jnp.sum(jnp.square(grad_feature)))
+                        interpolated_feature = alpha * expert_feature + (1 - alpha) * feature
+                        grad_feature, grad_state, grad_action, grad_next_state = jax.grad(lambda f, s, a, sn, ab: jnp.sum(self.discriminator.apply(discriminator_params, f, s, a, sn, ab)), argnums=(0, 1, 2, 3))(interpolated_feature, interpolated_state, interpolated_action, interpolated_next_state, interpolated_abs)
+                        grad_norm = jnp.sqrt(jnp.sum(jnp.square(grad_feature)) + 1e-12)  # eps: sqrt(0) has inf grad -> NaN with the Boltzmann relu encoder (grad_feature can be 0)
                         gp = (grad_norm - 1.0) ** 2
 
                         # Denoising Score Matching loss to get Boltzmann features
@@ -312,23 +325,24 @@ class TRIRL_PPO:
                     batch_actions = actions.reshape((-1,) + self.as_shape)
                     batch_features = self.train_env.feature_from_transition(batch_states, batch_actions) # get features
 
-                    # Expert batch
+                    # Expert batch: sample batch_size transitions WITH REPLACEMENT so the
+                    # expert minibatch is correct even when batch_size > number of expert
+                    # transitions. (The original perm[:batch_size] returned only len(expert)
+                    # rows; the downstream arange(batch_size) indexing then clamped the
+                    # out-of-range indices to the last row, collapsing the expert batch to
+                    # ~one repeated sample whenever nr_envs*nr_steps > len(expert_data).)
                     key, shuffle_key = jax.random.split(key)
-                    perm = jax.random.permutation(shuffle_key, expert_states.shape[0])
-                    expert_states = expert_states[perm]
-                    expert_actions = expert_actions[perm]
-                    batch_expert_states = expert_states[:self.batch_size]
-                    batch_expert_actions = expert_actions[:self.batch_size]
+                    expert_idx = jax.random.randint(shuffle_key, (self.batch_size,), 0, expert_states.shape[0])
+                    batch_expert_states = expert_states[expert_idx]
+                    batch_expert_actions = expert_actions[expert_idx]
                     batch_expert_features = self.train_env.feature_from_transition(batch_expert_states, batch_expert_actions) # get features
                     expert_labels = jnp.ones((self.batch_size, 1), dtype=jnp.float32)
                     rollout_labels = jnp.zeros((self.batch_size, 1), dtype=jnp.float32)
 
                     batch_next_states = next_states.reshape((-1,) + self.os_shape)
                     batch_absorbing = terminations.reshape(-1)
-                    expert_next_states = expert_next_states[perm]
-                    expert_absorbing = expert_absorbing[perm]
-                    batch_expert_next_states = expert_next_states[:self.batch_size]
-                    batch_expert_absorbing = expert_absorbing[:self.batch_size]
+                    batch_expert_next_states = expert_next_states[expert_idx]
+                    batch_expert_absorbing = expert_absorbing[expert_idx]
 
                     vmap_trirl_loss_fn = jax.vmap(trirl_loss_fn, in_axes=(None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), out_axes=0)
                     safe_mean = lambda x: jnp.mean(x) if x is not None else x
@@ -367,13 +381,13 @@ class TRIRL_PPO:
                         carry = (discriminator_state, key)
 
                         return carry, (metrics)
-                    
+
                     init_carry = (discriminator_state, key)
                     carry, (disc_optimization_metrics) = jax.lax.scan(trirl_minibatch_update, init_carry, batch_indices_disc)
                     discriminator_state, key = carry
-                    
+
                     """ Reward Update """
-                    
+
                     # Define Apply Functions
                     def _get_log_density_ratio(inputs, discriminator_state):
                         feature, state, action, next_state, absorbing = inputs
@@ -431,7 +445,7 @@ class TRIRL_PPO:
                         returns = advantages + values
                         return advantages, returns
 
-                
+
                     if self.handle_absorbing_states:
                         advantages, returns = calculate_gae_advantages_absorbing(critic_state, next_states, corr_reward, corr_reward_absorbing_state, values, terminations)
                     else:
@@ -470,7 +484,7 @@ class TRIRL_PPO:
                         pg_loss2 = -advantage_b * jnp.clip(ratio, 1 - self.clip_range, 1 + self.clip_range)
                         pg_loss = jnp.maximum(pg_loss1, pg_loss2)
                         entropy_loss = entropy.sum(1)
-                        
+
                         # Critic loss
                         new_value = self.critic.apply(critic_params, state_b)
                         critic_loss = 0.5 * (new_value - return_b) ** 2
@@ -497,7 +511,7 @@ class TRIRL_PPO:
                         }
 
                         return loss, (metrics)
-                    
+
                     # Gradients must only flow through the predicted ones
                     old_action_means = jax.lax.stop_gradient(old_action_means)
                     old_action_logstd = jax.lax.stop_gradient(old_action_logstd)
@@ -536,7 +550,7 @@ class TRIRL_PPO:
                             batch_returns[minibatch_indices],
                             minibatch_advantages,
                             batch_action_means[minibatch_indices],
-                            old_action_logstd, 
+                            old_action_logstd,
                             eta
                         )
 
@@ -575,7 +589,6 @@ class TRIRL_PPO:
                     }
                     corrected_reward_state = discriminator_state.replace(params=new_params)
 
-
                     # Logging
                     combined_metrics = {**infos, **disc_optimization_metrics, **ppo_optimization_metrics}
                     combined_metrics = tree.map_structure(lambda x: jnp.mean(x), combined_metrics)
@@ -596,11 +609,11 @@ class TRIRL_PPO:
 
                     combined_learning_iteration_step = (multi_learning_iteration_step * self.nr_updates_per_multi_learning_iteration) + learning_iteration_step + 1
                     jax.debug.callback(callback, (combined_metrics, learning_iteration_step, combined_learning_iteration_step, parallel_seed_id))
-                    
-                    return (policy_state, critic_state, discriminator_state, corrected_reward_state, (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features), env_state, key), None
+
+                    return (policy_state, critic_state, discriminator_state, corrected_reward_state, (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features), env_state, key), discriminator_state.params['params']['theta']
 
                 key, subkey = jax.random.split(key)
-                learning_iteration_carry, _ = jax.lax.scan(learning_iteration, (policy_state, critic_state, discriminator_state, corrected_reward_state,
+                learning_iteration_carry, inner_thetas = jax.lax.scan(learning_iteration, (policy_state, critic_state, discriminator_state, corrected_reward_state,
                                                                                 (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features),
                                                                                 env_state, subkey), jnp.arange(self.nr_updates_per_multi_learning_iteration))
 
@@ -632,6 +645,12 @@ class TRIRL_PPO:
                         "eval/episode_length": jnp.mean(eval_env_state.info["rollout/episode_length"]),
                     }
 
+                    if "rollout/is_success" in eval_env_state.info:
+                        eval_metrics["eval/is_success"] = jnp.mean(eval_env_state.info["rollout/is_success"])
+
+                    # if "rollout/task_err" in eval_env_state.info:
+                    #     eval_metrics["eval/task_err"] = jnp.mean(eval_env_state.info["rollout/task_err"])
+
                     def callback(metrics_and_global_step):
                         metrics, combined_learning_iteration_step = metrics_and_global_step
                         global_step = int(combined_learning_iteration_step.item() * self.nr_steps * self.nr_envs)
@@ -642,30 +661,75 @@ class TRIRL_PPO:
 
                     combined_learning_iteration_step = (multi_learning_iteration_step + 1) * self.nr_updates_per_multi_learning_iteration
                     jax.debug.callback(callback, (eval_metrics, combined_learning_iteration_step))
-                
+
 
                 # Saving
                 if self.save_model:
-                    def save_with_check(policy_state, critic_state, discriminator_state, corrected_reward_state):
-                        self.save(policy_state, critic_state, discriminator_state, corrected_reward_state)
-                    jax.debug.callback(save_with_check, policy_state, critic_state, discriminator_state, corrected_reward_state)
-                
-                return (policy_state, critic_state, discriminator_state, corrected_reward_state, (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features), env_state, key), None
+                    # best = lowest deterministic eval task error (pos+orient)
+                    # eval_task_err_for_save = (eval_metrics["eval/task_err"]
+                    #                           if self.evaluation_active else jnp.asarray(jnp.inf))
+                    eval_return_for_save = (eval_metrics["eval/episode_return"]
+                                            if self.evaluation_active else jnp.asarray(-jnp.inf))
+
+                    #eval_task_err_for_save = jnp.zeros(self.nr_envs)
+                    # def save_with_check(policy_state, critic_state, discriminator_state, corrected_reward_state, eval_task_err):
+                    #     self.save(policy_state, critic_state, discriminator_state, corrected_reward_state)  # latest.model
+                    #     if self.evaluation_active:
+                    #         te = float(np.asarray(eval_task_err).reshape(-1)[0])
+                    #         if te < self.best_eval_task_err:
+                    #             self.best_eval_task_err = te
+                    #             self.save(policy_state, critic_state, discriminator_state, corrected_reward_state,
+                    #                       file_name=self.best_model_file_name)
+                    #             rlx_logger.info(f"[save-best] new best eval/task_err={te:.4f} -> {self.best_model_file_name}")
+                    # jax.debug.callback(save_with_check, policy_state, critic_state, discriminator_state, corrected_reward_state, eval_task_err_for_save)
+
+                    def save_with_check(policy_state, critic_state, discriminator_state, corrected_reward_state,
+                                        eval_return):
+                        self.save(policy_state, critic_state, discriminator_state,
+                                  corrected_reward_state)  # latest.model
+
+                        if self.evaluation_active:
+                            current_return = float(np.asarray(eval_return).reshape(-1)[0])
+
+                            # Check if the current return is GREATER than the best return
+                            if current_return > self.best_eval_return:
+                                self.best_eval_return = current_return
+                                self.save(policy_state, critic_state, discriminator_state, corrected_reward_state,
+                                          file_name=self.best_model_file_name)
+                                rlx_logger.info(
+                                    f"[save-best] new best eval/episode_return={current_return:.4f} -> {self.best_model_file_name}")
+
+                    jax.debug.callback(save_with_check, policy_state, critic_state, discriminator_state,
+                                       corrected_reward_state, eval_return_for_save)
+
+                return (policy_state, critic_state, discriminator_state, corrected_reward_state, (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features), env_state, key), inner_thetas
 
 
-            jax.lax.scan(multi_learning_and_eval_save_iteration, (policy_state, critic_state, discriminator_state, corrected_reward_state,
+            _, all_thetas =  jax.lax.scan(multi_learning_and_eval_save_iteration, (policy_state, critic_state, discriminator_state, corrected_reward_state,
                                                                   (expert_states, expert_actions, expert_next_states, expert_absorbing, expert_features),
                                                                   env_state, key), jnp.arange(self.nr_multi_learning_and_eval_save_iterations))
-            
+
+            # Make the jitted function return the data
+            return all_thetas
 
         self.key, subkey = jax.random.split(self.key)
         seed_keys = jax.random.split(subkey, self.nr_parallel_seeds)
         train_function = jax.jit(jax.vmap(jitable_train_function))
         self.last_time = [time.time() for _ in range(self.nr_parallel_seeds)]
         self.start_time = deepcopy(self.last_time)
-        jax.block_until_ready(train_function(seed_keys, jnp.arange(self.nr_parallel_seeds)))
+        all_thetas = jax.block_until_ready(train_function(seed_keys, jnp.arange(self.nr_parallel_seeds)))
         rlx_logger.info(f"Average time: {max([time.time() - t for t in self.start_time]):.2f} s")
-    
+
+        all_thetas = np.asarray(all_thetas)
+        thetas_seed0 = all_thetas[0]
+        thetas_flat = thetas_seed0.reshape(-1, *thetas_seed0.shape[2:])
+        thetas_to_save = thetas_flat
+        os.makedirs(self.save_path, exist_ok=True)
+        file_path = os.path.join(self.save_path, "theta_matrix.npy")
+        np.save(file_path, thetas_to_save)
+
+        rlx_logger.info(f"Saved theta matrix of shape {thetas_to_save.shape} to {file_path}")
+
 
     def log(self, name, value, step):
         if self.track_tb:
@@ -697,7 +761,8 @@ class TRIRL_PPO:
             rlx_logger.info("└" + "─" * 31 + "┴" + "─" * 16 + "┘")
 
 
-    def save(self, policy_state, critic_state, discriminator_state, corrected_reward_state):
+    def save(self, policy_state, critic_state, discriminator_state, corrected_reward_state, file_name=None):
+        file_name = file_name or self.latest_model_file_name
         checkpoint = {
             "policy": policy_state,
             "critic": critic_state,
@@ -708,21 +773,21 @@ class TRIRL_PPO:
         self.latest_model_checkpointer.save(f"{self.save_path}/tmp", checkpoint, save_args=save_args)
         with open(f"{self.save_path}/tmp/config_algorithm.json", "w") as f:
             json.dump(self.config.algorithm.to_dict(), f)
-        shutil.make_archive(f"{self.save_path}/{self.latest_model_file_name}", "zip", f"{self.save_path}/tmp")
-        # os.rename(f"{self.save_path}/{self.latest_model_file_name}.zip", f"{self.save_path}/{self.latest_model_file_name}")
+        shutil.make_archive(f"{self.save_path}/{file_name}", "zip", f"{self.save_path}/tmp")
         shutil.rmtree(f"{self.save_path}/tmp")
 
         if self.track_wandb:
-            wandb.save(f"{self.save_path}/{self.latest_model_file_name}", base_path=self.save_path)
-    
+            wandb.save(f"{self.save_path}/{file_name}", base_path=self.save_path)
 
     def load(config, train_env, eval_env, run_path, writer, explicitly_set_algorithm_params):
         splitted_path = config.runner.load_model.split("/")
         checkpoint_dir = os.path.abspath("/".join(splitted_path[:-1]))
         checkpoint_file_name = splitted_path[-1]
+        if os.path.exists(f"{checkpoint_dir}/tmp"):
+            shutil.rmtree(f"{checkpoint_dir}/tmp")
         shutil.unpack_archive(f"{checkpoint_dir}/{checkpoint_file_name}", f"{checkpoint_dir}/tmp", "zip")
         checkpoint_dir = f"{checkpoint_dir}/tmp"
-        
+
         loaded_algorithm_config = json.load(open(f"{checkpoint_dir}/config_algorithm.json", "r"))
         for key, value in loaded_algorithm_config.items():
             if f"algorithm.{key}" not in explicitly_set_algorithm_params and key in config.algorithm:
@@ -748,7 +813,6 @@ class TRIRL_PPO:
 
         return model
 
-
     def make_reward_function(self):
         discriminator = self.discriminator
         corrected_reward_params = self.corrected_reward_state.params
@@ -757,10 +821,34 @@ class TRIRL_PPO:
 
         def reward_function(state, action, next_state, absorbing, log_prob=None):
             feature = feature_from_transition(state, action)
-            reward = discriminator.apply(corrected_reward_params, feature, state, action, next_state, absorbing)
+            params = corrected_reward_params
+
+            reward = discriminator.apply(params, feature, state, action, next_state, absorbing)
             return entropy_coef * reward
 
         reward_function = jax.vmap(reward_function, in_axes=(0, 0, 0, 0, None), out_axes=0)
+        return reward_function
+
+    def make_reward_function_fc(self):
+        discriminator = self.discriminator
+        feature_from_transition = self.train_env.feature_from_transition
+        entropy_coef = self.entropy_coef
+        base_params = self.corrected_reward_state.params
+
+        def reward_function(theta, state, action, next_state, absorbing, log_prob=None):
+            feature = feature_from_transition(state, action)
+            params = {
+                **base_params,
+                "params": {
+                    **base_params["params"],
+                    "theta": theta  # Override base theta with the curriculum theta
+                }
+            }
+
+            reward = discriminator.apply(params, feature, state, action, next_state, absorbing)
+            return entropy_coef * reward
+
+        reward_function = jax.vmap(reward_function, in_axes=(None, 0, 0, 0, 0, None), out_axes=0)
         return reward_function
 
 
@@ -796,8 +884,6 @@ class TRIRL_PPO:
                 save_code=True,
             )
 
-        reward_function = self.make_reward_function()
-
         writer = None
         if self.config.runner.track_tb:
             from torch.utils.tensorboard import SummaryWriter
@@ -808,7 +894,15 @@ class TRIRL_PPO:
                 "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in all_config_items])),
             )
 
-        model = PPO_RETRAINING(self.config, self.train_env, self.eval_env, run_path, writer, reward_function)
+        # Switch to use dynamic thetas in case of curriculum learning
+        if self.curriculum_learning_mode:
+            print("TRAINING WITH CURRICULUM MODE")
+            reward_function = self.make_reward_function_fc()
+            model = PPO_RETRAINING_CURRICULUM(self.config, self.train_env, self.eval_env, run_path, writer, reward_function)
+        else:
+            print("TRAINING WITHOUT CURRICULUM MODE")
+            reward_function = self.make_reward_function()
+            model = PPO_RETRAINING(self.config, self.train_env, self.eval_env, run_path, writer, reward_function)
 
         try:
             model.train()
@@ -822,7 +916,6 @@ class TRIRL_PPO:
 
 
     def test_irl(self, episodes):
-
         def visualize():
             rlx_logger.info("Testing runs infinitely. The episodes parameter is ignored.")
 
@@ -856,7 +949,7 @@ class TRIRL_PPO:
                 log_probs=np.zeros((1, nr_steps, self.nr_envs)),
                 advantages=np.zeros((1, nr_steps, self.nr_envs)),
                 returns=np.zeros((1, nr_steps, self.nr_envs)),
-            )
+            ).shape
 
             episode_return = jnp.zeros((self.nr_envs))
             self.key, subkey = jax.random.split(self.key)
@@ -880,9 +973,9 @@ class TRIRL_PPO:
 
                 if self.render:
                     env_state = self.train_env.render(env_state)
-                
+
             mean_episode_return = episode_return.mean()
-            rlx_logger.info(f"Mean Episode Return: {mean_episode_return}") 
+            rlx_logger.info(f"Mean Episode Return: {mean_episode_return}")
 
 
             def flatten_and_prune(arr):
@@ -892,7 +985,7 @@ class TRIRL_PPO:
 
             exp_states = flatten_and_prune(batch.states)
             exp_actions = flatten_and_prune(batch.actions)
-            exp_next_states = flatten_and_prune(batch.next_states)            
+            exp_next_states = flatten_and_prune(batch.next_states)
             exp_absorbing = flatten_and_prune(batch.terminations).flatten()
             exp_rewards = flatten_and_prune(batch.rewards).flatten()
 
@@ -901,11 +994,11 @@ class TRIRL_PPO:
             print(f"actions shape: {exp_actions.shape}")
             print(f"rewards shape: {exp_rewards.shape}")
             print(f"absorbing shape: {exp_absorbing.shape}")
-            np.savez(f"{self.save_path}/expert_dataset_Humanoid-v5_{self.nr_envs}_PPONew", states=exp_states, actions=exp_actions, 
+            np.savez(f"{self.save_path}/expert_dataset_Humanoid-v5_{self.nr_envs}_PPONew", states=exp_states, actions=exp_actions,
                 next_states=exp_next_states, absorbing=exp_absorbing, rewards=exp_rewards)
 
 
-        visualise()
+        visualize()
 
-    def general_properties():
+    def general_properties(self):
         return GeneralProperties

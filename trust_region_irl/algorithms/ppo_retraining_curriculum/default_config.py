@@ -58,6 +58,5 @@ def get_config(algorithm_name):
     config.handle_absorbing_states = True
     config.reward_type = 'feature-based' # options: feature-based, boltzmann-feature-based
     config.retraining = False
-    config.curriculum_learning = False
 
     return config

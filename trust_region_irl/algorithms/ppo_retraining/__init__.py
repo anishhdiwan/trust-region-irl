@@ -1,0 +1,8 @@
+from rl_x.algorithms.algorithm_manager import extract_algorithm_name_from_file, register_algorithm
+from trust_region_irl.algorithms.ppo_retraining.ppo_retraining import PPO_RETRAINING
+from trust_region_irl.algorithms.ppo_retraining.default_config import get_config
+from trust_region_irl.algorithms.ppo_retraining.general_properties import GeneralProperties
+
+
+PPO_RETRAINING_METHOD = extract_algorithm_name_from_file(__file__)
+register_algorithm(PPO_RETRAINING_METHOD, get_config, PPO_RETRAINING, GeneralProperties)

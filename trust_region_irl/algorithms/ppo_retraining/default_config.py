@@ -46,7 +46,7 @@ def get_config(algorithm_name):
 
     # Boltzmann feature-encoder architecture (used when reward_type='boltzmann-feature-based').
     # hidden_dims: comma-separated encoder layer widths; latent_dim: encoder output (= reward theta dim).
-    config.boltzmann_hidden_dims = "16,32,64"
+    config.boltzmann_hidden_dims = "4,8"
     config.boltzmann_latent_dim = 16
     config.boltzmann_energy_hidden_dim = 32
     # point maze
@@ -58,6 +58,5 @@ def get_config(algorithm_name):
     config.handle_absorbing_states = True
     config.reward_type = 'feature-based' # options: feature-based, boltzmann-feature-based
     config.retraining = False
-    config.curriculum_learning = False
 
     return config

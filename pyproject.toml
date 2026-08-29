@@ -21,4 +21,4 @@ repository = "https://github.com/anishhdiwan/trust-region-irl/"
 readme = {file = "README.md", content-type = "text/markdown"}
 
 [tool.setuptools.packages.find]
-include = ["trust_region_irl"]
+include = ["trust_region_irl*"]

@@ -59,11 +59,71 @@ python experiment.py \
 
 - **Supported algorithms:** `[trirl_ppo, trirl_trpl, trirl_trpl_fb, gail_ppo, airl_ppo, amp_ppo, near_ppo, lsiq_sac]`. By default pass `flax_full_jit` as the implementation.
   - *Locomujoco implementation*: for robotics, we use the Locomujoco library. Pass `flax_loco_mjx` as the implementation. 
-- **Supported environments:** `[half_cheetah_mjx, ant_mjx, walker_mjx, hopper_mjx, humanoid_mjx, loco_mjx]`
+- **Supported environments:** `[half_cheetah_mjx, ant_mjx, walker_mjx, hopper_mjx, humanoid_mjx, loco_mjx, pushT_franka]`
   - *Robotics environments:* robotics envs can be accessed by passing `loco_mjx` with the following `[--environment.agent="MjxUnitreeG1" --environment.task="run/walk" , --environment.agent="MjxUnitreeGo2" --environment.task="rl"]`
 - The full list of config options of each algorithm is stored in `trust-region-irl/algorithms/<alg_name>/flax_full_jit/default_config.py`
 
 
+
+### Viewing Results
+
+**View a model learned by IRL** (e.g. TRIRL-PPO-FB) by rendering it in the Push-T viewer. Point `--runner.load_model` at the checkpoint you want to inspect:
+```bash
+cd trust-region-irl/experiments
+python experiment.py \
+  --algorithm.name="trirl_ppo_fb.flax_full_jit" \
+  --algorithm.data_path="../trirl_dataset/rl_expert/expert_dataset_pusht_mtp_clean_93_episodes_trirl_f32abs.npz" \
+  --algorithm.boltzmann_hidden_dims="16,32,64" \
+  --environment.name="pusht_mjx" \
+  --environment.nr_envs=1 \
+  --environment.seed=0 \
+  --environment.feature_fn="base_without_ctrl" \
+  --environment.render=True \
+  --runner.mode="test" \
+  --runner.load_model="<path/to/best.model.zip>" \
+  --runner.track_tb=False \
+  --runner.track_wandb=False \
+  --runner.save_model=False \
+  --runner.track_console=True
+```
+or just run `./view_model.sh` which already points at a saved checkpoint.
+
+**View a model learned by PPO** (retraining on the recovered/frozen reward) the same way, but with `--algorithm.name="ppo_retraining"`:
+```bash
+python experiment.py \
+  --algorithm.name="ppo_retraining" \
+  --algorithm.data_path="../trirl_dataset/rl_expert/expert_dataset_pusht_mtp_clean_93_episodes_trirl_f32abs.npz" \
+  --environment.name="pusht_mjx" \
+  --environment.nr_envs=1 \
+  --environment.seed=0 \
+  --environment.feature_fn="base_without_ctrl" \
+  --environment.render=True \
+  --runner.mode="test" \
+  --runner.load_model="<path/to/best.model.zip>" \
+  --runner.track_tb=False \
+  --runner.track_wandb=False \
+  --runner.save_model=False \
+  --runner.track_console=True
+```
+or `./vis_ppo.sh`.
+
+**View expert data** (real-robot Push-T episodes) in the MuJoCo viewer:
+```bash
+python vis_expert_data.py --data-dir="../trirl_dataset/rl_expert/expert_data" --episodes 11
+```
+Drop `--episodes` to play every episode in the folder, in order, or `./vis_expert_data.sh` for the same thing.
+
+**Plot the learned reward** (feature-based Boltzmann discriminator) for every checkpoint in a run directory. Edit `target_directory` at the bottom of `plot_reward.py` to point at your run folder, then:
+```bash
+python plot_reward.py
+```
+This loops over every experiment subfolder, loads `models/best.model.zip`, and saves a 3-panel reward plot (orientation, end-effector distance, position heatmap) to `plots/reward_<exp_id>.png`.
+
+**Plot how the reward evolves over training** as a video. Edit `experiment_id` / `target_exp_dir` at the bottom of `plot_video.py` to point at a run with a saved `models/theta_matrix.npy` (the theta history), then:
+```bash
+python plot_video.py
+```
+This renders one reward-plot frame per saved theta and stitches them into `plots/reward_evolution_<experiment_id>.mp4`.
 
 ### Discrete Setting
 `trust_region_irl_discrete` contains a numpy-only gridworld implementation of TRIRL. It can be used to reproduce Figure 2 in the paper.
