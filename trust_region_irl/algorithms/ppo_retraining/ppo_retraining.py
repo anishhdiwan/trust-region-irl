@@ -32,6 +32,8 @@ class Batch:
         self.advantages = advantages
         self.returns = returns
 
+# TODO Add a curriculum path for the learning on the ppo retraining
+
 class PPO_RETRAINING:
     def __init__(self, config, train_env, eval_env, run_path, writer, reward_function=None):
         self.config = config

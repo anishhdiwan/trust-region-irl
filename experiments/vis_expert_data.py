@@ -35,33 +35,72 @@ def quat_mul(q1, q2):
     ])
 
 
+# def main():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--data-dir", default="../trirl_dataset/rl_expert/expert_data",
+#                          help="Directory with session_<timestamp>_episode_XXXX.npz files")
+#     parser.add_argument("--episodes", nargs="*", default=None,
+#                          help="Specific episode indices to play, e.g. 0 3 7. Default: all, in order.")
+#     parser.add_argument("--pause-between-episodes", type=float, default=1.0)
+#     args = parser.parse_args()
+#
+#     data_dir = Path(args.data_dir)
+#     episode_files = sorted(data_dir.glob("session_*_episode_*.npz"))
+#     if args.episodes is not None:
+#         wanted = {int(e) for e in args.episodes}
+#         episode_files = [f for f in episode_files if int(f.stem.split("_")[-1]) in wanted]
+#     if not episode_files:
+#         raise SystemExit(f"No session_*_episode_*.npz files found in {data_dir}")
+#
+#     env = PushT(render=True)
+#     model = env.mj_model
+#     data = mujoco.MjData(model)
+#     mujoco.mj_forward(model, data)
+#
+#     for ep_file in episode_files:
+#         print(f"Playing {ep_file.name}")
+#         ep = np.load(ep_file)
+#         states = ep["states"]
+#         for state in states:
+#             block_pos_rel, block_quat_rel = state[0:3], state[3:7]
+#             arm_q = state[10:17]
+#
+#             # map recorded goal-relative pose into the sim's world frame
+#             block_pos_world = np.asarray(env.goal_pos) + block_pos_rel
+#             block_quat_world = quat_mul(np.asarray(env.goal_quat), block_quat_rel)
+#
+#             data.qpos[0:3] = block_pos_world + np.array([0.0, 0.0, 0.0])
+#             data.qpos[3:7] = block_quat_world
+#             data.qpos[7:14] = arm_q
+#             mujoco.mj_forward(model, data)
+#
+#             data.light_xdir = env.light_xdir
+#             data.light_xpos = env.light_xpos
+#             env.viewer.render(data)
+#
+#         time.sleep(args.pause_between_episodes)
+#
+#     env.close()
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", default="../trirl_dataset/rl_expert/expert_data",
-                         help="Directory with session_<timestamp>_episode_XXXX.npz files")
-    parser.add_argument("--episodes", nargs="*", default=None,
-                         help="Specific episode indices to play, e.g. 0 3 7. Default: all, in order.")
-    parser.add_argument("--pause-between-episodes", type=float, default=1.0)
-    args = parser.parse_args()
-
-    data_dir = Path(args.data_dir)
-    episode_files = sorted(data_dir.glob("session_*_episode_*.npz"))
-    if args.episodes is not None:
-        wanted = {int(e) for e in args.episodes}
-        episode_files = [f for f in episode_files if int(f.stem.split("_")[-1]) in wanted]
-    if not episode_files:
-        raise SystemExit(f"No session_*_episode_*.npz files found in {data_dir}")
-
+    data_dir = "../trirl_dataset/rl_expert/expert_data"
     env = PushT(render=True)
     model = env.mj_model
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
 
-    for ep_file in episode_files:
-        print(f"Playing {ep_file.name}")
-        ep = np.load(ep_file)
-        states = ep["states"]
-        for state in states:
+    eps = np.load("../trirl_dataset/rl_expert/expert_dataset_pusht_mtp_clean_93_episodes_trirl_f32abs.npz")
+
+    end_idxs = np.where(eps["absorbing"])[0]  # steps flagged as episode-end
+    if end_idxs[-1] != len(eps["states"]) - 1:
+        end_idxs = np.append(end_idxs, len(eps["states"]) - 1)
+    starts = np.concatenate([[0], end_idxs[:-1] + 1])
+    ends = end_idxs + 1
+    episodes = [eps["states"][s:e] for s, e in zip(starts, ends)]
+
+    #
+    for ep in episodes[30:40]:
+        for state in ep:
             block_pos_rel, block_quat_rel = state[0:3], state[3:7]
             arm_q = state[10:17]
 
@@ -77,11 +116,9 @@ def main():
             data.light_xdir = env.light_xdir
             data.light_xpos = env.light_xpos
             env.viewer.render(data)
-
-        time.sleep(args.pause_between_episodes)
+        time.sleep(1)
 
     env.close()
-
 
 if __name__ == "__main__":
     main()

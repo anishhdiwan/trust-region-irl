@@ -42,11 +42,13 @@ def load_checkpoint(model_zip):
     params = ckpt
     theta = np.asarray(ckpt["discriminator"]["params"]["params"]["theta"], dtype=np.float32)
     disc_params = ckpt["discriminator"]["params"]
-    encoder = BoltzmannDiscriminatorFeatureBased(
-        hidden_dims=config_algorithm["boltzmann_hidden_dims"],
-        latent_dim=config_algorithm["boltzmann_latent_dim"],
-        energy_hidden_dim=config_algorithm["boltzmann_energy_hidden_dim"],
-    )
+    # encoder = BoltzmannDiscriminatorFeatureBased(
+    #     hidden_dims=config_algorithm["boltzmann_hidden_dims"],
+    #     latent_dim=config_algorithm["boltzmann_latent_dim"],
+    #     energy_hidden_dim=config_algorithm["boltzmann_energy_hidden_dim"],
+    # )
+
+    encoder = BoltzmannDiscriminatorFeatureBased()
     return theta, disc_params, params, encoder
 
 def plot_16features(encoded_features):
@@ -59,12 +61,12 @@ def plot_16features(encoded_features):
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     fig.savefig("energy16_histograms.png", dpi=125)
 
-def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta):
+def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta, features_dim=3):
     qs = np.linspace(-np.pi, np.pi, 100).reshape(-1, 1)
     w = np.cos(qs / 2.0)
     orient_feat = -(1.0 - np.clip(w * w, 0.0, 1.0))
 
-    features = jnp.hstack([np.zeros((100, 1)), orient_feat, np.zeros((100, 1))])
+    features = jnp.hstack([np.zeros((100, 1)), orient_feat, np.zeros((100, 1))]) if features_dim == 3 else jnp.hstack([np.zeros((100, 1)), orient_feat])
 
     encoded_features = boltzmann_encoder.apply(disc_params, features,
                                                method=BoltzmannDiscriminatorFeatureBased.encode_feature)
@@ -78,7 +80,7 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta):
     orient_err = features[:, 1]
     ee_block = features[:, 2]
 
-    features = jnp.stack([-pos_err, -orient_err, -ee_block], axis=-1)
+    features = jnp.stack([-pos_err, -orient_err, -ee_block], axis=-1) if features_dim == 3 else jnp.stack([pos_err, orient_err], axis=-1)
 
     encoded_features = boltzmann_encoder.apply(disc_params, features,
                                                method=BoltzmannDiscriminatorFeatureBased.encode_feature)
@@ -105,7 +107,7 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta):
     orient_err = features[:, 1]
     ee_block = features[:, 2]
 
-    features = jnp.stack([-pos_err, -orient_err, -ee_block], axis=-1)
+    features = jnp.stack([-pos_err, -orient_err, -ee_block], axis=-1) if features_dim == 3 else jnp.stack([pos_err, orient_err], axis=-1)
 
     encoded_features = boltzmann_encoder.apply(disc_params, features,
                                                method=BoltzmannDiscriminatorFeatureBased.encode_feature)
@@ -123,12 +125,12 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta):
 
     # 2. End-Effector Reward
     # Recreating the xs range for EE since the variable was overwritten by the position grid
-    xs_ee = np.linspace(0.0, 0.35, 100)
-    axes[1].set_title("Reward with fixed position and orientation")
-    axes[1].plot(xs_ee, ee_reward, color="#e11d48", label="reward")
-    axes[1].set_xlabel("distance between ee and block")
-    axes[1].set_ylabel("reward")
-    axes[1].legend()
+    # xs_ee = np.linspace(0.0, 0.35, 100)
+    # axes[1].set_title("Reward with fixed position and orientation")
+    # axes[1].plot(xs_ee, ee_reward, color="#e11d48", label="reward")
+    # axes[1].set_xlabel("distance between ee and block")
+    # axes[1].set_ylabel("reward")
+    # axes[1].legend()
 
     # 3. Position Reward
     # xs and ys here refer to the last assignment (-0.35 to 0.35)
@@ -144,14 +146,15 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta):
     plt.savefig(f"plots/reward_{exp_id}.png", dpi=300)
 
 # target_directory = 'runs/<PROJECT_NAME>/<EXPERIMENT_NAME>'
-target_directory = 'runs/data_scaling_effect/pusht_ppo_fb'
+target_directory = 'runs/curriculum_rl/pusht_ppo_fb'
+features_dim = 3
 
 exp_ids = [f.name for f in Path(target_directory).iterdir() if f.is_dir()]
 
 for id in exp_ids:
     try:
         theta, disc_params, params, boltzmann_encoder = load_checkpoint(f"{target_directory}/{id}/models/best.model.zip")
-        plot_rewards(id, boltzmann_encoder, disc_params, theta)
+        plot_rewards(id, boltzmann_encoder, disc_params, theta, features_dim)
     except Exception as e:
         print(f"Skipping {id}, error: {e}")
         continue
