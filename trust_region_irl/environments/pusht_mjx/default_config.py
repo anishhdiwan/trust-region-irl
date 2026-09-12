@@ -13,5 +13,6 @@ def get_config(environment_name):
     config.copy_train_env_for_eval = True
     config.feature_fn = "base"  # IRL feature basis: base | base_rbf | rbf | state_action
     config.block_type = "free"  # block physics: free (6-DOF) | 3dof (planar slide/slide/hinge)
+    config.random_TPos = False
 
     return config

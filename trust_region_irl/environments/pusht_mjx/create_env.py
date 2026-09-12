@@ -9,7 +9,7 @@ def create_train_and_eval_env(config):
     if config.environment.copy_train_env_for_eval:
         return train_env, train_env
 
-    eval_env = PushT(render=config.environment.render, feature_fn=config.environment.feature_fn)
+    eval_env = PushT(render=config.environment.render, feature_fn=config.environment.feature_fn, random_TPOS=config.environment.random_TPOS)
     eval_env.general_properties = GeneralProperties
 
     return train_env, eval_env

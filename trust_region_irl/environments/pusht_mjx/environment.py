@@ -77,8 +77,15 @@ def _quat_error_body(qd, q):
 
 class PushT:
     # fixed scene (examples/pusht_franka_free.py SEED 40 / the data generator)
-    BLOCK_POS = (0.6, -0.1) #(0.6, -0.1)
-    BLOCK_ANGLE = np.pi / 2
+    preset_block_poses = jnp.array([
+        [0.4, -0.1, np.pi / 2],
+        [0.65, 0.0, np.pi],
+        [0.6, 0.05, 5 * np.pi / 4],
+        [0.5, 0.2, -np.pi / 2],
+        [0.4, -0.05, -np.pi / 4],
+        [0.45, -0.15, 0.0],
+    ], dtype=jnp.float32)
+
     GOAL_POS_EE = np.array([0.45, 0.1, 0.035])
     GOAL_QUAT_EE = jnp.array([0.0, 0.7071, 0.7071, 0.0])  # wxyz
     MAX_SPEED = 0.35
@@ -97,7 +104,8 @@ class PushT:
     SINGULARITY_THRESHOLD = 0.05
 
     def __init__(self, render, horizon=250, reward_style="dense",
-                 success_threshold=0.05, feature_fn="base"):
+                 success_threshold=0.05, feature_fn="base", random_TPOS = False):
+        self.random_TPOS = random_TPOS
         self.horizon = horizon
         self.reward_style = reward_style
         self.success_threshold = success_threshold
@@ -285,10 +293,32 @@ class PushT:
 
     @partial(jax.jit, static_argnums=(0,))
     def _reset(self, state):
-        data = self.mjx_data
-        data = data.replace(qpos=self.initial_qpos, qvel=self.initial_qvel,
-                            ctrl=jnp.zeros(self.mjx_model.nu),
-                            mocap_pos=self.mocap_pos, mocap_quat=self.mocap_quat)
+        if self.random_TPOS:
+            key, t_pos_key = jax.random.split(state.key, 2)
+
+            idx = jax.random.randint(t_pos_key, shape=(), minval=0, maxval=6)
+
+            block_xy = self.preset_block_poses[idx][0:2]
+            block_angle = self.preset_block_poses[idx][2]
+
+            half_angle = block_angle * 0.5
+            block_quat = jnp.array([jnp.cos(half_angle), 0.0, 0.0, jnp.sin(half_angle)])
+            block_z = 0.045
+            block_qpos = jnp.concatenate([block_xy, jnp.array([block_z]), block_quat])
+            qpos = self.initial_qpos.at[0:7].set(block_qpos)
+
+            data = self.mjx_data
+            data = data.replace(qpos=qpos, qvel=self.initial_qvel,
+                                ctrl=jnp.zeros(self.mjx_model.nu),
+                                mocap_pos=self.mocap_pos, mocap_quat=self.mocap_quat)
+
+        else:
+            key = state.key
+            data = self.mjx_data
+            data = data.replace(qpos=self.initial_qpos, qvel=self.initial_qvel,
+                                ctrl=jnp.zeros(self.mjx_model.nu),
+                                mocap_pos=self.mocap_pos, mocap_quat=self.mocap_quat)
+
         data = mjx.forward(self.mjx_model, data)
 
         next_observation = self.get_observation(data)
