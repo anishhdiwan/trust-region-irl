@@ -1,8 +1,0 @@
-from rl_x.algorithms.algorithm_manager import extract_algorithm_name_from_file, register_algorithm
-from trust_region_irl.algorithms.airl_ppo.flax_loco_mjx.airl_ppo import AIRL_PPO
-from trust_region_irl.algorithms.airl_ppo.flax_loco_mjx.default_config import get_config
-from trust_region_irl.algorithms.airl_ppo.flax_loco_mjx.general_properties import GeneralProperties
-
-
-AIRL_PPO_FLAX_LOCO_MJX = extract_algorithm_name_from_file(__file__)
-register_algorithm(AIRL_PPO_FLAX_LOCO_MJX, get_config, AIRL_PPO, GeneralProperties)

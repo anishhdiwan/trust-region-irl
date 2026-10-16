@@ -1,8 +1,0 @@
-from rl_x.algorithms.algorithm_manager import extract_algorithm_name_from_file, register_algorithm
-from trust_region_irl.algorithms.iq_sac.flax_loco_mjx.iq_sac import IQ_SAC
-from trust_region_irl.algorithms.iq_sac.flax_loco_mjx.default_config import get_config
-from trust_region_irl.algorithms.iq_sac.flax_loco_mjx.general_properties import GeneralProperties
-
-
-IQ_SAC_FLAX_LOCO_MJX = extract_algorithm_name_from_file(__file__)
-register_algorithm(IQ_SAC_FLAX_LOCO_MJX, get_config, IQ_SAC, GeneralProperties)
