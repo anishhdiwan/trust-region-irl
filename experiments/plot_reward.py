@@ -51,6 +51,26 @@ def load_checkpoint(model_zip):
     encoder = BoltzmannDiscriminatorFeatureBased()
     return theta, disc_params, params, encoder
 
+def normalize_01(x):
+    x_min = jnp.min(x)
+    x_max = jnp.max(x)
+    return (x - x_min) / (x_max - x_min + 1e-8)
+
+
+def global_normalize(*rewards):
+    """
+    Takes any number of reward arrays, finds the global min and max across all of them,
+    and normalizes them all to a 0-1 scale based on those global bounds.
+    """
+    # Find global min and max across all provided reward arrays
+    global_min = float(min([jnp.min(r) for r in rewards]))
+    global_max = float(max([jnp.max(r) for r in rewards]))
+
+    # Normalize and return them in the same order
+    normalized = tuple((r - global_min) / (global_max - global_min + 1e-8) for r in rewards)
+
+    return normalized
+
 def plot_16features(encoded_features):
     fig, axes = plt.subplots(4, 4, figsize=(13, 10))
     for k, ax in enumerate(axes.ravel()):
@@ -71,8 +91,9 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta, features_dim=3):
     encoded_features = boltzmann_encoder.apply(disc_params, features,
                                                method=BoltzmannDiscriminatorFeatureBased.encode_feature)
     ort_reward = jnp.array(encoded_features @ theta)
+    ort_reward = normalize_01(ort_reward)
 
-    xs = np.linspace(0.0, 0.35, 100).reshape(-1, 1)
+    xs = np.linspace(0.0, 0.4, 100).reshape(-1, 1)
 
     features = jnp.hstack([jnp.zeros((100, 1)), xs, np.zeros((100, 1))])
 
@@ -86,9 +107,10 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta, features_dim=3):
                                                method=BoltzmannDiscriminatorFeatureBased.encode_feature)
 
     ee_reward = jnp.array(encoded_features @ theta)
+    ee_reward = normalize_01(ee_reward)
 
-    xs = np.linspace(-0.35, 0.35, 100)
-    ys = np.linspace(-0.35, 0.35, 100)
+    xs = np.linspace(-0.4, 0.4, 100)
+    ys = np.linspace(-0.4, 0.4, 100)
 
     XX, YY = np.meshgrid(xs, ys)
 
@@ -113,47 +135,67 @@ def plot_rewards(exp_id, boltzmann_encoder, disc_params, theta, features_dim=3):
                                                method=BoltzmannDiscriminatorFeatureBased.encode_feature)
 
     pos_reward = jnp.array(encoded_features @ theta).reshape(100, 100)
+    pos_reward = normalize_01(pos_reward)
+    # ---------------------------------------------
+    # CREATE THE LAYOUT
+    # ---------------------------------------------
+    if features_dim == 3:
+        fig = plt.figure(figsize=(16, 10))
+        gs = fig.add_gridspec(2, 2)  # 2 rows, 2 columns
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+        ax_ort = fig.add_subplot(gs[0, 0])  # Row 0, Col 0 (Top Left)
+        ax_ee = fig.add_subplot(gs[1, 0])  # Row 1, Col 0 (Bottom Left)
+        ax_pos = fig.add_subplot(gs[:, 1])  # Both Rows, Col 1 (Entire Right Side)
+    else:
+        fig = plt.figure(figsize=(14, 6))
+        gs = fig.add_gridspec(1, 2)  # 1 row, 2 columns
 
-    # 1. Orientation Reward
-    axes[0].set_title("Reward with fixed pos and ee")
-    axes[0].plot(qs, ort_reward, color="#e11d48", label="reward")
-    axes[0].set_xlabel("orientation error")
-    axes[0].set_ylabel("reward")
-    axes[0].legend()
+        ax_ort = fig.add_subplot(gs[0, 0])  # Row 0, Col 0 (Left)
+        ax_pos = fig.add_subplot(gs[0, 1])  # Row 0, Col 1 (Right)
 
-    # 2. End-Effector Reward
-    # Recreating the xs range for EE since the variable was overwritten by the position grid
-    # xs_ee = np.linspace(0.0, 0.35, 100)
-    # axes[1].set_title("Reward with fixed position and orientation")
-    # axes[1].plot(xs_ee, ee_reward, color="#e11d48", label="reward")
-    # axes[1].set_xlabel("distance between ee and block")
-    # axes[1].set_ylabel("reward")
-    # axes[1].legend()
+    # ---------------------------------------------
+    # 1. Orientation Reward (Top Left)
+    # ---------------------------------------------
+    ax_ort.set_title("Orientation Reward")
+    ax_ort.plot(qs, ort_reward, color="#e11d48")
+    ax_ort.set_xticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
+    ax_ort.set_xticklabels([r'$-\pi$', r'$-\pi/2$', r'$0$', r'$\pi/2$', r'$\pi$'])
 
-    # 3. Position Reward
-    # xs and ys here refer to the last assignment (-0.35 to 0.35)
-    axes[2].set_title("Reward with fixed orientation and ee")
-    im = axes[2].imshow(pos_reward, origin="lower", extent=[xs[0], xs[-1], ys[0], ys[-1]], cmap="viridis")
-    axes[2].set_xlabel("x")
-    axes[2].set_ylabel("y")
-    axes[2].plot(0, 0, marker="*", color="red", markersize=16, zorder=5, label="goal")
-    axes[2].legend()
-    fig.colorbar(im, ax=axes[2])
+    # ---------------------------------------------
+    # 2. End-Effector Reward (Bottom Left)
+    # ---------------------------------------------
+    if features_dim == 3:
+        xs_ee = np.linspace(0.0, 0.4, 100)
+        ax_ee.set_title("End-Effector Reward")
+        ax_ee.plot(xs_ee, ee_reward, color="#e11d48")
+        ax_ee.set_xticks(np.linspace(0.0, 0.4, 5))
 
+    # ---------------------------------------------
+    # 3. Position Reward (Right Side)
+    # ---------------------------------------------
+    ax_pos.set_title("Position Reward")
+    im = ax_pos.imshow(pos_reward, origin="lower", extent=[xs[0], xs[-1], ys[0], ys[-1]], cmap="Blues")
+    ax_pos.plot(0, 0, marker="*", color="red", markersize=10, linestyle="None", zorder=5, label="goal")
+    ax_pos.legend()
+    fig.colorbar(im, ax=ax_pos, ticks=[0, 1], fraction=0.046, pad=0.04)
+    ax_pos.set_xticks(np.linspace(-0.4, 0.4, 5))
+    ax_pos.set_yticks(np.linspace(-0.4, 0.4, 5))
+
+    plt.rcParams.update({'font.size': 18})
     plt.tight_layout()
     plt.savefig(f"plots/reward_{exp_id}.png", dpi=300)
+    plt.close(fig)  # Good practice to close the figure after saving to free memory!
+
 
 # target_directory = 'runs/<PROJECT_NAME>/<EXPERIMENT_NAME>'
-target_directory = 'runs/curriculum_rl/pusht_ppo_fb'
-features_dim = 3
+target_directory = 'runs/ICRA_TRIRL_10_2F/pusht_ppo_fb'
+features_dim = 2
 
 exp_ids = [f.name for f in Path(target_directory).iterdir() if f.is_dir()]
 
 for id in exp_ids:
     try:
-        theta, disc_params, params, boltzmann_encoder = load_checkpoint(f"{target_directory}/{id}/models/best.model.zip")
+        theta, disc_params, params, boltzmann_encoder = load_checkpoint(f"{target_directory}/{id}/models/latest.model.zip")
         plot_rewards(id, boltzmann_encoder, disc_params, theta, features_dim)
     except Exception as e:
         print(f"Skipping {id}, error: {e}")

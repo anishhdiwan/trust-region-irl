@@ -1,0 +1,397 @@
+BUG REVIEW: TRIRL PPO-FB on Push-T (FR3, MJX)
+==============================================
+Scope: trust_region_irl/algorithms/trirl_ppo_fb/flax_full_jit/*, algorithms/ppo_retraining*/,
+       algorithms/data_utils.py, environments/pusht_mjx/*, experiments/*.sh (working tree on
+       branch ICRA-Project, including the uncommitted edits). No code was modified.
+Run config assumed: experiments/run_exp.bash (boltzmann-feature-based, feature_fn=pos_ort,
+       random_TPos=True, nr_envs=4096, nr_steps=128, minibatch_size=512, 10 seeds).
+
+How the findings were checked:
+  - Read the code and diffed it against the upstream trirl_ppo implementation.
+  - Inspected the expert dataset trirl_expert_data_100_episodes.npz: 600 successful episodes,
+    6 start presets, every episode ends with absorbing=1.
+  - Replayed expert actions open-loop in the current env. The start state matches exactly,
+    but the EE is about 5 cm off after 10 steps and about 12 cm off after 40.
+  - Checked the spawn contacts of every preset with CPU MuJoCo.
+  - Read ICRA_TRIRL_10_2F_summary.csv. Discriminator BCE is about 0.65-0.68, close to
+    ln2 = 0.69. env_info/is_success and env_info/diverged are exactly 0 for every seed.
+
+Commits referenced in "Introduced in" (found with git blame/log on the cited lines):
+  e670f01  2026-06-18  Add trirl codebase (A. Diwan) - original trirl_ppo_fb, ppo_retraining
+  1429b4e  2026-08-25  Adding franka pusht env and ppo_retraining with curriculum (2nd of 3)
+  158ae55  2026-08-25  Same message (3rd of 3) - adds environments/pusht_mjx/*
+  5d36f8e  2026-08-29  Truncate the episode if FR3 reaches singularity
+  2242c09  2026-09-02  Better IK function (1st of 2 commits with this message)
+  958b3ea  2026-09-12  Better IK function (2nd) - actually adds pos_ort features + discriminator
+  cd6e98c  2026-09-12  Randomize T-block position during training
+  "untracked/uncommitted" = only in the current working tree.
+11 of the 22 bugs (fully or partly) date back to e670f01, i.e. before any Push-T work.
+
+Ordering: roughly by expected impact on learning and on seed-to-seed variance.
+Bugs #3, #8 and #10 were inherited from the upstream trirl_ppo / RL-X code, but they are
+still bugs.
+
+
+Bug #1
+Issue: [High] For the Boltzmann reward, the "corrected" reward averages theta vectors that
+belong to different, constantly changing encoders, so the corrected reward is mathematically
+meaningless.
+Location: trirl_ppo_fb/flax_full_jit/trirl_ppo.py:576-590 (reward correction) and :401-402
+(use of corrected_reward_state).
+Introduced in: e670f01 (Add trirl codebase, A. Diwan). Theta-only averaging and the Boltzmann encoder are
+  both unchanged since then.
+Description: The new corrected params take ALL encoder weights (feat_denses, feat_densefinal,
+energy) from the newest discriminator. Only "theta" is a running average of past thetas, and
+each past theta was learned in a different latent space z_k(f). At the next iteration that
+averaged theta is dotted with the new encoder's z, so (1-step)*theta_old is applied to
+coordinates it was never fit to. The upstream TRIRL avoided this by keeping a buffer of whole
+past discriminators (ParamsBuffer + make_chunked_ensemble_rew_correct).
+Suggestion: For a learned encoder, either restore the upstream approach (buffer of full
+discriminator params, mix the log-density ratios, not the thetas), or freeze or slowly
+Polyak-average the encoder so the latent space is shared. Theta averaging is valid only for
+the fixed-feature 'feature-based' discriminator.
+
+
+Bug #2
+Issue: [High] The reward PPO optimises mixes the newest discriminator with weight epsilon
+(0.2). The stored corrected reward uses the trust-region step epsilon/(1+eta), which is about
+0.0065 at the start, so the two disagree.
+Location: trirl_ppo.py:401-402 (corr_reward = (1-eps)*D_corr + eps*beta*D_new) vs
+trirl_ppo.py:577 (step = eps/(1+eta)).
+Introduced in: e670f01 (Add trirl codebase). Both formulas (:401-402 and :577) unchanged since then.
+Description: The trust-region on the reward exists to limit how far each reward update moves.
+Here PPO always sees a 20% jump toward the latest discriminator, about 30x larger than intended
+while eta=30, and the eta schedule has no effect on the reward PPO actually trains on. The
+reward the policy learned from at iteration k is also not the reward saved as
+corrected_reward_state, which is later used for retraining.
+Suggestion: Use one formula: compute step = eps/(1+eta) before building corr_reward and use
+(1-step)*D_corr + step*beta*D_new there. Use the eta of the previous iteration, as upstream did
+with EtasBuffer.
+
+
+Bug #3
+Issue: [High] With anneal_learning_rate=True the discriminator learning rate ignores
+learning_rate_disc and uses the policy learning rate instead.
+Location: trirl_ppo.py:131-133 (linear_schedule_disc returns self.learning_rate * fraction).
+Inherited from trirl_ppo/flax_full_jit/trirl_ppo.py:131.
+Introduced in: e670f01 (Add trirl codebase). linear_schedule_disc unchanged since then.
+Description: run_exp.bash sets learning_rate_disc=1e-4, but the discriminator actually trains
+at 4e-4 (the policy LR), annealed. The denominator
+(nr_updates*nr_epochs)/nr_epochs_disc is also only correct when nr_epochs == nr_epochs_disc.
+A 4x higher discriminator LR, combined with Bug #5, makes the reward non-stationary and noisy
+across seeds.
+Suggestion: Return self.learning_rate_disc * fraction, with
+fraction = 1 - (count // (nr_minibatches*nr_epochs_disc)) / nr_updates. Log the discriminator
+LR to confirm the value in wandb.
+
+
+Bug #4
+Issue: [High] The gradient penalty forces ||dD/df|| = 1, but the pos_ort features only span a
+few tenths. The discriminator logit can then barely change across the data, so it stays near
+chance and the reward signal is tiny.
+Location: trirl_ppo.py:286-296 (gp = (||grad_feature|| - 1)^2, gp_lambda=0.5) together with
+environment.py:528-534 (raw, unnormalised pos_ort features).
+Introduced in: e670f01 (GP with target 1 on the feature gradient; 1429b4e only changed the sqrt epsilon)
+  + 958b3ea (raw pos_ort features added to environment.py).
+Description: Expert pos_err has std 0.058 m (range 0-0.26) and 1-w^2 has std 0.32. With a
+logit that is about 1-Lipschitz in feature space, the logit can only vary by about 0.1-1
+between expert-like and agent-like states. That matches the logged discriminator agent/expert
+BCE of 0.65-0.68 (chance = 0.693) in ICRA_TRIRL_10_2F_summary.csv. The policy is then driven
+mostly by the noise in that weak reward.
+Suggestion: Normalise the features (for example divide by expert std) or use a zero-centred
+penalty (target 0, as in R1/R2 or DAC) instead of the WGAN-GP target of 1. Then check that
+the discriminator BCE drops clearly below ln2 early in training.
+
+
+Bug #5
+Issue: [High] minibatch_size=512 with a 524,288-sample batch gives 10,240 SGD steps per
+iteration for the policy and another 10,240 for the discriminator.
+Location: experiments/run_exp.bash (--algorithm.minibatch_size=512, nr_envs=4096,
+nr_steps=128) -> trirl_ppo.py:73, :353-355, :534-536.
+Introduced in: Not in any commit: experiments/run_exp.bash is untracked (uncommitted). The code that uses
+  minibatch_size is from e670f01; the default 32768 there is fine.
+Description: nr_minibatches = 4096*128/512 = 1024, times 10 epochs. PPO on such a huge number
+of small, correlated updates per rollout drifts far from the behaviour policy (only the clip
+and the KL term hold it back). The discriminator overfits the small expert set before the
+policy can react. Which seed survives this becomes largely luck. The default config uses
+minibatch 32,768 (16 minibatches).
+Suggestion: Use about 4-32 minibatches per epoch (minibatch_size 16k-131k for this batch)
+and/or fewer discriminator epochs (1-5). Alternatively decouple the discriminator update count
+from nr_minibatches.
+
+
+Bug #6
+Issue: [High] The env's differential-IK controller is not the one that generated the expert
+data, so the same action produces a different robot motion in training than in the demos.
+Location: environment.py:226-272 (_differential_ik) vs the generator
+mtp-thesis/hydrax/simulation/deterministic_beta.py:32-90 (differential_IK).
+Introduced in: 2242c09 (1st "better IK" commit, 2026-09-02): adaptive damping, manipulability
+  term and global dq rescale. The original port in 158ae55 used plain pinv(J) like the
+  generator (only a per-joint clip differed). Note: 958b3ea did NOT change the IK.
+Description: The generator uses a plain pinv(J), the null-space pull 10*(qhome-q), and no
+velocity rescaling. The env (since commit 2242c09) uses adaptive damping, an extra
+manipulability-gradient null-space term (K_MANIP=1), and a global dq rescale to the joint
+limits. Replaying the expert actions from the identical start state already gives 0.02 rad of
+joint error after 1 step, and about 5 cm of EE error after 10 steps and 12 cm after 40.
+Expert actions and joint observations are therefore off-distribution for the env.
+Suggestion: Use exactly the generator's IK in the env (or regenerate the dataset with the
+current env controller). Add a replay test (expert actions -> env) to CI that asserts a small
+trajectory error.
+
+
+Bug #7
+Issue: [High] The pos_ort feature set gives the learned reward no gradient until the pusher is
+already touching and moving the block, so learning depends on lucky exploration.
+Location: environment.py:528-534 (feature_fn == "pos_ort": [-pos_err, -orient_err] only);
+run_exp.bash --environment.feature_fn="pos_ort".
+Introduced in: 958b3ea (pos_ort feature_fn added) + run_exp.bash (untracked) selecting it.
+Description: The reward is a function of the block pose only. At reset the block is still, so
+every agent state has the same feature and reward until contact. Whether a seed discovers
+pushing (and in which direction) depends on the random exploration, which explains a large
+part of the seed-to-seed variance. The entropy bonus is effectively zero (Bug #10), which
+makes this worse.
+Suggestion: Add an EE-to-block (or EE-to-contact-point) distance feature, as the "base"
+feature set does. Alternatively add a small shaping term, or randomise the arm start near the
+block, while keeping expert features comparable.
+
+
+Bug #8
+Issue: [Medium] GAE does not cut the lambda-trace at truncations (horizon or divergence), so
+advantages leak from the next episode into the last steps of the previous one.
+Location: trirl_ppo.py:416-428 and :430-446 (advantage recursion uses (1 - terminations[t])
+only). Same in ppo_retraining/ppo_retraining.py:182-195 and ppo_retraining_curriculum. Pattern
+inherited from rl_x PPO.
+Introduced in: e670f01 (Add trirl codebase), both trirl_ppo.py and ppo_retraining.py. The
+  ppo_retraining_curriculum copy came in with 1429b4e/158ae55.
+Description: The bootstrap term correctly uses actual_next_observation for truncated steps.
+But the recursion advantage = delta + gamma*lambda*(1-term)*next_adv keeps adding the
+advantage of the freshly reset episode. With horizon 250 and all 4096 envs starting together,
+most envs truncate at the same step, so this bias hits the same batch slice every time.
+Suggestion: Store a 'dones' flag (terminated | truncated) in the rollout and use (1 - dones)
+in the GAE recursion. Keep (1 - terminations) only in the bootstrap term of delta.
+
+
+Bug #9
+Issue: [Medium] Absorbing-state handling is a no-op in the discriminator, yet the advantage
+adds a 99x "terminal tail" built from that unlearned value.
+Location: discriminator.py BoltzmannDiscriminatorFeatureBased.__call__ /
+DiscriminatorFeatureBased.__call__ (the 'absorbing' argument is ignored); trirl_ppo.py:404-408
+and :440-441.
+Introduced in: e670f01 (Add trirl codebase). Both discriminators ignored 'absorbing' from the start; the
+  uncommitted rewrite of BoltzmannDiscriminatorFeatureBased keeps that.
+Description: corr_reward_absorbing_state is just r(s') with absorbing=1, which the network
+never sees. terminal_tail = gamma/(1-gamma)*(r(s') + alpha*H) = 99*(...) is then added on every
+success termination. Expert transitions with absorbing=1 (600 of them) are also not modelled
+as absorbing. For the Boltzmann encoder, z at the goal is arbitrary, so the success bonus or
+penalty can have either sign and differs per seed.
+Suggestion: Implement DAC-style absorbing handling: append an absorbing indicator to the
+discriminator input (or learn a separate absorbing reward) and train it on expert/agent
+absorbing samples. Otherwise drop the tail, or clip it and log it.
+
+
+Bug #10
+Issue: [Medium] The entropy bonus is multiplied by entropy_coef twice, so its effective weight
+is 1e-6 instead of 1e-3.
+Location: trirl_ppo.py:475-476 (entropy = self.entropy_coef * entropy) and :501
+(loss = ... - self.entropy_coef * entropy_loss). Same in ppo_retraining.py:208-227
+(inherited).
+Introduced in: e670f01 (Add trirl codebase), both trirl_ppo.py:475-476/:501 and ppo_retraining.py
+  (1429b4e only reformatted the line there).
+Description: The comment says entropy is scaled by alpha to match the alpha-scaled reward. The
+loss then scales it by alpha again. Advantages are normalised per minibatch, so the entropy
+term is essentially zero relative to the policy-gradient term. Exploration then comes only
+from the fixed initial std (std stays about 0.36-0.40 in the logs), which hurts the
+contact-discovery problem in Bug #7.
+Suggestion: Remove one of the two multiplications (keep entropy_coef in the loss only). If
+needed, tune entropy_coef separately from the IRL temperature beta.
+
+
+Bug #11
+Issue: [Medium] A diverged episode (block off the table, NaN state) is treated as a time-limit
+truncation. Its value is bootstrapped from a clipped or zeroed observation, and that
+transition is also fed to the discriminator as a normal agent sample.
+Location: environment.py:366-371 (truncated = at_horizon | diverged), :418-419
+(nan_to_num/clip of obs); trirl_ppo.py:324-326 (all agent samples go to the discriminator).
+Introduced in: 158ae55 (pusht_mjx env added: truncated = at_horizon | diverged, obs nan_to_num/clip).
+  5d36f8e added near_singular, 2242c09 reverted to the original line.
+Description: A blow-up gets V(garbage_obs) as its continuation value instead of a failure
+value. NaN-to-zero observations (block pos rel goal = 0) can even look like the goal. These
+samples also distort the discriminator batch. Divergences cannot be monitored (Bug #14), so
+it is unclear how often this happens per seed.
+Suggestion: Treat divergence as termination (no bootstrap, optionally a fixed penalty), and
+mask diverged transitions out of the discriminator batch and the PPO loss. Fix Bug #14 so the
+divergence rate is visible.
+
+
+Bug #12
+Issue: [Medium] With random_TPos=True, preset [0.5, 0.2, -pi/2] spawns the T-block
+interpenetrating the end-effector.
+Location: environment.py:80-87 (preset_block_poses[3]) and :296-313 (_reset random branch;
+the arm qpos is fixed at the EE start (0.45, 0.10)).
+Introduced in: cd6e98c (preset_block_poses with [0.5, 0.2, -pi/2]); EE start unchanged since 158ae55.
+Description: CPU MuJoCo contact check at reset: the 'ee' geom is 1.5 cm inside the block and
+four other arm geoms are 5 mm inside. The first step therefore starts with a large
+penetration impulse. This makes about 1/6 of the episodes start with a violent, poorly
+reproducible block kick and can trigger divergence. The other 5 presets have no contacts.
+Suggestion: Move that preset (or the EE start) so there is at least 1-2 cm clearance, or
+check for penetration at reset and resample. The expert data has the same start, so
+regenerate those 100 episodes if the pose is changed.
+
+
+Bug #13
+Issue: [Medium/Low] The latent variance-floor penalty is computed per sample inside the vmap,
+not across the batch. The DSM and variance terms are also weighted so low that the
+"Boltzmann" encoder is effectively a plain MLP discriminator.
+Location: trirl_ppo.py:257-259 (var_floor_penalty), :299-307, :347 (trirl_loss_fn is vmapped
+per sample); run_exp.bash dsm_alpha=0.001, default feature_var_weight=0.001.
+Introduced in: e670f01 (var_floor_penalty inside the vmapped loss, feature_var_weight=0.001 default)
+  + run_exp.bash (untracked) setting dsm_alpha=0.001.
+Description: Inside the vmap, all_z is one expert z concatenated with one agent z (shape
+2*latent_dim), so jnp.var(z, axis=0) is the variance over latent coordinates of a single
+pair, not over the batch. The feature loss is scaled by dsm_alpha*feature_var_weight = 1e-6,
+and DSM by 1e-3, so neither shapes the latent space.
+Suggestion: Compute the variance penalty (and ideally DSM) once on the whole minibatch outside
+the per-sample vmap. Rebalance dsm_alpha and feature_var_weight so these terms are of the same
+order as the BCE loss, or drop them if not wanted.
+
+
+Bug #14
+Issue: [Medium, logging] On the step where an episode ends, _reset() overwrites
+env_info/is_success, pos_err, orient_err and diverged with 0. The logged success rate and
+divergence rate are therefore always 0.
+Location: environment.py:325-331 (_reset sets info["env_info/*"] = 0.0) called from
+when_done at :384-388.
+Introduced in: 158ae55 (pusht_mjx env added; _reset zeroes env_info/* and when_done returns it).
+Description: The success flag is computed in get_reward, but the done branch returns the reset
+state's info, so the terminal step's values are lost. ICRA_TRIRL_10_2F_summary.csv shows
+env_info/is_success = 0 and env_info/diverged = 0 for every seed. Training progress and
+divergences are therefore invisible, and pos_err/orient_err means are biased low by the zeros.
+Suggestion: In when_done, copy the terminal step's env_info/* values (r_info and diverged) into
+start_state.info. Also log an episode-level success rate (for example a
+"rollout/is_success" value set on episode end).
+
+
+Bug #15
+Issue: [Low, logging] eval/is_success is never logged because the env never writes the key
+"rollout/is_success".
+Location: trirl_ppo.py:648-649.
+Introduced in: 1429b4e (added the 'rollout/is_success' check); the env (158ae55) never wrote that key.
+Description: The check `"rollout/is_success" in eval_env_state.info` is always False, so the
+evaluation has no success metric at all. The only eval signal is the (inflated) env return,
+see Bug #16.
+Suggestion: Have the env store an episode-level "rollout/is_success" on episode end (like
+rollout/episode_return), or compute success in the eval loop from the final pos/orient error,
+as eval_final_error.py does.
+
+
+Bug #16
+Issue: [Medium] The eval return treats any env that never finishes an episode inside the
+250-step eval window as having return 0.0, which is the best possible value. This inflates
+eval/episode_return and the choice of best.model.
+Location: environment.py:279-282 and :380-382 (rollout/episode_return starts at 0 and is
+updated only on success or horizon); trirl_ppo.py:643-646 (mean over envs) and :686-700
+(best model = max eval return).
+Introduced in: 158ae55 (episode_return starts at 0, only updated on success/horizon) + e670f01 (mean over
+  envs) + 1429b4e (best.model chosen by max eval return).
+Description: Per-step env reward is always negative, so a real episode return is < 0. An env
+that diverges and is reset (the reset episode cannot reach the horizon in the remaining steps)
+keeps the initial 0.0. A policy that blows up some envs can therefore score better and be
+saved as best.model. The training curve rollout/episode_return is biased the same way during
+the first 250 steps.
+Suggestion: Track per-env "episode completed" flags and average only over completed episodes,
+counting diverged ones as failures with the clipped minimum return. Select best.model by
+success rate or final task error instead.
+
+
+Bug #17
+Issue: [Medium] PPO retraining on the learned reward drops the absorbing-state treatment used
+during IRL training, so it optimises a different MDP than the one the reward was learned in.
+Location: ppo_retraining/ppo_retraining.py:179-197 (plain GAE with V=0 after termination) vs
+trirl_ppo.py:440-450 (absorbing tail). Reward built in trirl_ppo.py:816-830.
+Introduced in: e670f01 (Add trirl codebase): ppo_retraining.py never had the absorbing tail.
+Description: In IRL training a success termination gets the terminal tail. In retraining it
+gets 0 afterwards. If the learned reward near the goal is negative, retraining rewards ending
+early; if it is positive, it rewards avoiding success (survival bias). Retraining is also
+affected by Bugs #8 and #10.
+Suggestion: Use the same absorbing/terminal handling in retraining as in IRL training
+(ideally after fixing Bug #9), and verify the sign of the learned reward near the goal before
+retraining.
+
+
+Bug #18
+Issue: [Low, curriculum mode only] The curriculum thetas are raw discriminator thetas, but they
+are plugged into the final corrected-reward params. Scale (beta = 1000x) and latent space both
+mismatch.
+Location: trirl_ppo.py:613 (scan output = discriminator_state theta), :723-729
+(theta_matrix.npy), :832-852 (make_reward_function_fc uses corrected_reward_state params);
+ppo_retraining_curriculum/ppo_retraining.py:170-219.
+Introduced in: 1429b4e (theta scan output, theta_matrix.npy, make_reward_function_fc).
+Description: The corrected theta lives in beta-scaled units, while the saved thetas are
+unscaled, so curriculum rewards are 1000x smaller than the final reward. For the Boltzmann
+reward each saved theta also belongs to the encoder of its own iteration, not the final
+encoder (see Bug #1).
+Suggestion: Save the corrected thetas (and, for Boltzmann, the matching encoder params), or
+document that curriculum mode only works with fixed features. Then scale consistently with
+make_reward_function.
+
+
+Bug #19
+Issue: [Medium, for runs using the 60/93-episode datasets] With random_TPos=False the env
+starts the block at preset 0 = (0.4, -0.1, pi/2), but those datasets start at (0.6, -0.1,
+pi/2).
+Location: environment.py:186-198 (_compute_initial_qpos uses preset_block_poses[0]),
+:315-320; experiments/run_experiment.sh, retrain.sh, view_model.sh, vis_ppo.sh (data_path
+= expert_dataset_pusht_mtp_clean_93_episodes_* / *_60_episodes).
+Introduced in: cd6e98c removed BLOCK_POS=(0.6,-0.1) (which matched these datasets) and made preset 0 =
+  (0.4,-0.1); the uncommitted edit to environment.py:194-197 then uses preset 0 as the fixed
+  start. Scripts pointing at the 60/93-episode data are from 1429b4e.
+Description: Checked from the data: every episode in *_60_episodes.npz starts at
+(0.6, -0.1, 1.57). The env docstring also still states the (0.6, -0.1) start. The start
+distribution of agent and expert then differs, so the expert feature distribution is not
+reachable in the same way, and retraining or evaluation is done from a different start than
+the demos.
+Suggestion: Make the fixed start configurable and match it to the dataset (or always use the
+600-episode multi-preset dataset with random_TPos=True). Update the docstring.
+
+
+Bug #20
+Issue: [Low, reproducibility] The committed version (cd6e98c) cannot construct the Push-T env.
+It only works because of uncommitted edits.
+Location: committed create_env.py:12 (random_TPOS=config.environment.random_TPOS) and
+committed environment.py:194-197 (self.BLOCK_POS / self.BLOCK_ANGLE, which no longer exist).
+Introduced in: cd6e98c (create_env.py uses random_TPOS; _compute_initial_qpos still uses the removed
+  BLOCK_POS/BLOCK_ANGLE). Fixed only in the uncommitted working tree.
+Description: The config key is random_TPos, and BLOCK_POS/BLOCK_ANGLE were removed, so a
+clean checkout raises AttributeError. Cluster jobs started from the committed code would not
+match what was run locally, and results across seeds or machines may come from different
+code.
+Suggestion: Commit the current create_env.py / environment.py fixes. Record the git commit
+hash in the wandb config of each run.
+
+
+Bug #21
+Issue: [Low] The singularity truncation added in 5d36f8e was later removed, so
+SINGULARITY_THRESHOLD is dead code.
+Location: environment.py:103-104 (SINGULARITY_THRESHOLD defined, never used); compare with
+commit 5d36f8e environment.py (near_singular truncation).
+Introduced in: 5d36f8e added SINGULARITY_THRESHOLD + near_singular truncation; 2242c09 removed the
+  truncation (constant left behind) and added the global dq rescale.
+Description: The commit message says episodes are truncated near singularities, but the
+current _step no longer does this. The global dq rescale in _differential_ik:271 instead
+slows ALL joint motion, including the commanded EE velocity, whenever the null-space or
+manipulability terms are large. A policy near a singular configuration therefore sees its
+actions silently shrink.
+Suggestion: Either remove the constant or re-add a deliberate singularity check (as
+termination or penalty). Log sigma_min and the IK rescale factor so the effect is visible.
+
+
+Bug #22
+Issue: [Low] The gradient penalty is evaluated at a fixed midpoint (alpha = 0.5) between an
+expert and an agent sample, not at a random interpolation.
+Location: trirl_ppo.py:287-293 (alpha = self.gp_alpha), default_config.py:40 (gp_alpha = 0.5).
+Introduced in: e670f01 (Add trirl codebase): alpha = self.gp_alpha, default gp_alpha = 0.5.
+Description: Standard GP draws alpha ~ U(0,1) per sample so the penalty covers the whole
+segment between the two distributions. A fixed 0.5 regularises only one slice of feature
+space, leaving the regions near expert and agent data unconstrained.
+Suggestion: Sample alpha per sample from the per-sample rng that is already passed in
+(dsm_keys). Combine this with the zero-centred penalty suggested in Bug #4.

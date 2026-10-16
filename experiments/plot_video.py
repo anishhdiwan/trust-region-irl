@@ -184,7 +184,7 @@ def plot_rewards_frame(theta, disc_params, boltzmann_encoder, frame_idx, output_
     # 3. Position Reward
     axes[2].set_title("Position Reward")
     im = axes[2].imshow(pos_reward, origin="lower", extent=[xs[0], xs[-1], ys[0], ys[-1]],
-                        cmap="viridis", vmin=pos_lims[0], vmax=pos_lims[1])  # <-- Fixed limits applied here
+                        cmap="blues", vmin=pos_lims[0], vmax=pos_lims[1])  # <-- Fixed limits applied here
     axes[2].set_xlabel("x")
     axes[2].set_ylabel("y")
     axes[2].plot(0, 0, marker="*", color="red", markersize=16, zorder=5, label="goal")
@@ -203,8 +203,8 @@ def plot_rewards_frame(theta, disc_params, boltzmann_encoder, frame_idx, output_
 if __name__ == "__main__":
     boltzmann_encoder = BoltzmannDiscriminatorFeatureBased()
 
-    experiment_id = "1785933526"
-    target_exp_dir = f'runs/curriculum_rl_eval_based/pusht_ppo_fb/{experiment_id}'
+    experiment_id = "1789307885"
+    target_exp_dir = f'runs/ICRA_TRIRL_10_3F/pusht_ppo_fb/{experiment_id}'
 
     checkpoint_path = os.path.join(target_exp_dir, "models/best.model.zip")
     theta_matrix_path = os.path.join(target_exp_dir, "models/theta_matrix.npy")

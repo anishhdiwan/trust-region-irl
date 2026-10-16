@@ -104,8 +104,8 @@ class PushT:
     SINGULARITY_THRESHOLD = 0.05
 
     def __init__(self, render, horizon=250, reward_style="dense",
-                 success_threshold=0.05, feature_fn="base", random_TPOS = False):
-        self.random_TPOS = random_TPOS
+                 success_threshold=0.05, feature_fn="base", random_TPos = False):
+        self.random_TPos = random_TPos
         self.horizon = horizon
         self.reward_style = reward_style
         self.success_threshold = success_threshold
@@ -191,10 +191,10 @@ class PushT:
         """
         m, d = self.mj_model, mujoco.MjData(self.mj_model)
         # fixed block pose (free joint qpos[0:7])
-        d.qpos[0] = self.BLOCK_POS[0]
-        d.qpos[1] = self.BLOCK_POS[1]
+        d.qpos[0] = self.preset_block_poses[0][0]
+        d.qpos[1] = self.preset_block_poses[0][1]
         d.qpos[2] = 0.045
-        half = self.BLOCK_ANGLE * 0.5
+        half = self.preset_block_poses[0][2] * 0.5
         d.qpos[3:7] = np.array([np.cos(half), 0.0, 0.0, np.sin(half)])  # wxyz, z-rot
 
         q = np.array([0.0, -np.pi / 4, 0.0, -9 * np.pi / 10, 0.0, 3 * np.pi / 4, np.pi / 4])
@@ -293,7 +293,7 @@ class PushT:
 
     @partial(jax.jit, static_argnums=(0,))
     def _reset(self, state):
-        if self.random_TPOS:
+        if self.random_TPos:
             key, t_pos_key = jax.random.split(state.key, 2)
 
             idx = jax.random.randint(t_pos_key, shape=(), minval=0, maxval=6)
@@ -330,6 +330,7 @@ class PushT:
         info["env_info/reward_ctrl"] = 0.0
         info["env_info/diverged"] = 0.0
         return state.replace(
+            key=key,
             data=data,
             next_observation=next_observation,
             actual_next_observation=next_observation,

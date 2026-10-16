@@ -5,10 +5,11 @@ python experiment.py \
       --environment.name="pusht_mjx" \
       --environment.nr_envs=1 \
       --environment.seed=0 \
-      --environment.feature_fn="base_without_ctrl" \
+      --environment.feature_fn="pos_ort" \
       --environment.render=True \
+      --environment.random_TPos=True \
       --runner.mode="test" \
-      --runner.load_model="runs/different-boltzmann-design-base-features-ppo-fb/pusht_ppo_fb/1784559157/models/best.model.zip" \
+      --runner.load_model="runs/ICRA_TRIRL_10_2F/pusht_ppo_fb/1789335824/models/best.model.zip" \
       --runner.track_tb=False \
       --runner.track_wandb=False \
       --runner.save_model=False \
