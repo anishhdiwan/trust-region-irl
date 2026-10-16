@@ -1,7 +1,0 @@
-from rl_x.algorithms.algorithm_manager import extract_algorithm_name_from_file, register_algorithm
-from trust_region_irl.algorithms.trirl_trpl.flax_loco_mjx.trirl_trpl import TRIRL_TRPL
-from trust_region_irl.algorithms.trirl_trpl.flax_loco_mjx.default_config import get_config
-from trust_region_irl.algorithms.trirl_trpl.flax_loco_mjx.general_properties import GeneralProperties
-
-TRIRL_TRPL_FLAX_LOCO_MJX = extract_algorithm_name_from_file(__file__)
-register_algorithm(TRIRL_TRPL_FLAX_LOCO_MJX, get_config, TRIRL_TRPL, GeneralProperties)

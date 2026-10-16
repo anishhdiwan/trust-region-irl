@@ -1,8 +1,0 @@
-from rl_x.algorithms.algorithm_manager import extract_algorithm_name_from_file, register_algorithm
-from trust_region_irl.algorithms.ppo_retraining_curriculum.ppo_retraining import PPO_RETRAINING_CURRICULUM
-from trust_region_irl.algorithms.ppo_retraining_curriculum.default_config import get_config
-from trust_region_irl.algorithms.ppo_retraining_curriculum.general_properties import GeneralProperties
-
-
-PPO_RETRAINING_WITH_CURRICULUM = extract_algorithm_name_from_file(__file__)
-register_algorithm(PPO_RETRAINING_WITH_CURRICULUM, get_config, PPO_RETRAINING_CURRICULUM, GeneralProperties)

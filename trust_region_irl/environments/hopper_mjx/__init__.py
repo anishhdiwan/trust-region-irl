@@ -1,8 +1,0 @@
-from rl_x.environments.environment_manager import extract_environment_name_from_file, register_environment
-from trust_region_irl.environments.hopper_mjx.create_env import create_train_and_eval_env
-from trust_region_irl.environments.hopper_mjx.default_config import get_config
-from trust_region_irl.environments.hopper_mjx.general_properties import GeneralProperties
-
-
-CUSTOM_MUJOCO_HOPPER_MJX = extract_environment_name_from_file(__file__)
-register_environment(CUSTOM_MUJOCO_HOPPER_MJX, get_config, create_train_and_eval_env, GeneralProperties)

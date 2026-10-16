@@ -1,8 +1,0 @@
-from rl_x.algorithms.algorithm_manager import extract_algorithm_name_from_file, register_algorithm
-from trust_region_irl.algorithms.iq_sac.flax_full_jit.iq_sac import IQ_SAC
-from trust_region_irl.algorithms.iq_sac.flax_full_jit.default_config import get_config
-from trust_region_irl.algorithms.iq_sac.flax_full_jit.general_properties import GeneralProperties
-
-
-IQ_SAC_FLAX_FULL_JIT = extract_algorithm_name_from_file(__file__)
-register_algorithm(IQ_SAC_FLAX_FULL_JIT, get_config, IQ_SAC, GeneralProperties)
