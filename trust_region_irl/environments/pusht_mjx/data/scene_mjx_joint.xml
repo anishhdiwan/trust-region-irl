@@ -1,0 +1,139 @@
+<mujoco model="fr3 scene">
+  <!-- NUmerical Stuff -->
+  <option impratio="0.65"
+          solver="Newton"
+          jacobian="dense"
+          cone="elliptic"
+          timestep="0.025" 
+          iterations="5"
+          ls_iterations="8">
+  <flag eulerdamp="disable" 
+        warmstart="enable"/>
+  </option>
+  <custom>
+    <numeric data="32" name="max_contact_points"/>
+    <numeric name="maxhullverts"   data="32"/>
+    <numeric data="128" name="max_geom_pairs"/>
+  </custom>
+
+  <size nconmax="64"/>
+  <size njmax="1024"/>
+
+  <!-- Defaults -->
+  <default>
+    <geom contype="7" conaffinity="7"/>
+  </default>
+  <default>
+    <default class="tblock">
+      <!-- friction = [slide spin roll]; keep your values -->
+      <geom friction="0.1 0.0001 0.0001" 
+            solref="0.05 1.1" 
+            solimp="0.75 0.85 0.001 0.5 2"
+            condim="3"
+            contype="2" 
+            conaffinity="5"/>  
+    </default>
+
+    <default class="goal">
+      <geom conaffinity="0" 
+            contype="0" 
+            rgba="0 1 0 0.1"/>
+    </default>
+
+    <default class="wood">
+      <geom friction="0.4"
+            solref="0.025 1.2" 
+            solimp="0.1 0.2 0.003 0.5 2"
+            rgba="0.295 0.227 0.15 1.0"
+            condim="3" contype="4" conaffinity="3"/> 
+    </default>
+  </default>
+
+  <!-- Push T setup -->
+  <worldbody>
+    <camera name='top_view' pos="-0.276 -0.512 0.817" xyaxes="0.864 -0.503 0.000 0.404 0.694 0.596"/>
+    <camera name="comparison" pos="1.107 -0.076 0.436" xyaxes="0.178 0.984 -0.000 -0.466 0.084 0.881"/>
+    <camera name="video_view" pos="1.455 -0.774 1.133" xyaxes="0.469 0.883 0.000 -0.500 0.266 0.824"/>
+
+
+      <body name="goal" mocap="true" pos="0.5 0.0 0.04" quat="1 0 0 0">
+        <geom class="goal" name="goal_bottom" type="box" size=".05 0.025 0.025"/>
+        <geom class="goal" name="goal_top" type="box" size=".025 0.06 0.025" pos="0.075 0.0 0.0"/>
+      </body>
+
+      <body name="ghost_sphere" mocap="true" pos="0.5 0.0 0.035" quat="0 0.7071068 0.7071068 0">
+        <site type="sphere" size="0.4" rgba="0 1 0 0.05"/>
+      </body>
+
+      <body name="ground" pos="0.5 0.0 0.0075" quat="1 0 0 0">
+        <geom class="wood" name="ground" type="box" size="0.4 0.4 0.0075" />
+      </body>
+
+      <body name="block" pos="0.5 0.0 0.04" quat="1 0 0 0" >
+        <site name="block_site" pos="0.0 0 0" size="0.02" rgba="1 0 0 1"/>
+        <joint name="T_x" type="slide" pos="0.0425 0 0" axis="1 0 0" frictionloss="0.3" damping="0.3"/>
+        <joint name="T_y" type="slide" pos="0.0425 0 0" axis="0 1 0" frictionloss="0.3" damping="0.3"/>
+        <joint name="T_z" type="hinge" pos="0.0425 0 0" axis="0 0 1" frictionloss="0.003" damping="0.003"/>
+        <!-- Lower part of T -->
+        <geom class="tblock" name="bottom" type="box" size=".05 0.025 0.025" pos="0.0 0.000 0.0" mass="0.13"/>
+          <site name="T_1" pos="-0.03 0 0" size="0.015" rgba="0 0 0 1"/>
+          <site name="T_2" pos="0.075 0.04 0" size="0.015" rgba="0 0 0 1"/>
+          <site name="T_3" pos="0.075 -0.04 0" size="0.015" rgba="0 0 0 1"/>
+        <!-- Upper part ot T -->
+        <geom class="tblock" name="top" type="box" size=".025 0.06 0.025" pos="0.075 0.0 0.0" mass="0.17"/>
+      </body>
+
+  </worldbody>
+
+  <!-- Robot model -->
+  <include file="fr3_vel_mjx_joint.xml"/>
+
+  <worldbody>
+
+    <body name="sphere_carrier" pos="0.45 0 0.032" quat="0 0.7071068 0.7071068 0"> 
+      <joint type="slide" axis="1 0 0" damping="0" frictionloss="0" armature="0" stiffness="0"/>             <!-- x -->
+      <joint type="slide" axis="0 1 0" damping="0" frictionloss="0" armature="0" stiffness="0"/>             <!-- y -->
+      <!-- <joint type="hinge" axis="0 0 1" damping="0" frictionloss="0" armature="0" stiffness="0"/>             yaw -->
+      <geom name="ee_sphere" type="sphere" size="0.015"
+            friction="0 0.0 0.0"
+            contype="0" conaffinity="0" rgba="0 0 0 0"/>
+      <site name="sphere_site" pos="0 0 0"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <framepos name="position" objtype="body" objname="block" reftype="body" refname="goal"/>
+    <framequat name="orientation" objtype="body" objname="block" reftype="body" refname="goal"/>
+
+    <framepos name="position_world" objtype="body" objname="block"/>
+    <framepos name="goal_position_world" objtype="body" objname="goal"/>
+
+    <framequat name="orientation_world" objtype="body" objname="block"/>
+    <framequat name="goal_orientation_world" objtype="body" objname="goal"/>
+
+    <framepos name="safety" objtype="body" objname="ee_frame" reftype="body" refname="goal"/>
+    <framepos name="ee_t1" objtype="body" objname="ee_frame" reftype="site" refname="T_1"/>
+    <framepos name="ee_t2" objtype="body" objname="ee_frame" reftype="site" refname="T_2"/>
+    <framepos name="ee_t3" objtype="body" objname="ee_frame" reftype="site" refname="T_3"/>
+
+  </sensor>
+
+  <!-- Defines the spatial region to compute model statistics like mass, center of mass, etc. -->
+  <statistic center="0.4 0.0 0.0" extent="1.0"/>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 1 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" type="plane" size="0 0 0.05" 
+          solref="0.04 0.95"
+          solimp="0.7 0.95 0.001 0.5 2"
+          material="groundplane" friction="0.1 0.0001 0.0001" condim="3"
+          contype="4" conaffinity="3"/>  
+  </worldbody>
+</mujoco>

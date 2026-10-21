@@ -123,7 +123,7 @@ class TRIRL_PPO:
 
         def linear_schedule_disc(count):
             fraction = 1.0 - (count // (self.nr_minibatches * self.nr_epochs_disc)) / ((self.nr_updates * self.nr_epochs) / self.nr_epochs_disc)
-            return self.learning_rate * fraction
+            return self.learning_rate_disc * fraction
 
         learning_rate = linear_schedule if self.anneal_learning_rate else self.learning_rate
         learning_rate_disc = linear_schedule_disc if self.anneal_learning_rate else self.learning_rate_disc
