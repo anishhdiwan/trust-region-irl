@@ -13,6 +13,9 @@ def get_config(environment_name):
     config.copy_train_env_for_eval = True
     config.feature_fn = "base"  # IRL feature basis: base | base_rbf | base_without_ctrl | pos_ort | state_action
     config.random_TPos = False
+    config.impl = "jax"              # MJX backend: jax | warp (warp needs the trirl_warp36 conda env: MuJoCo 3.6, CUDA 12)
+    config.contacts_per_env = 64     # warp only: contact slots per env in the shared contact pools (raise for contact-heavy tasks)
+    config.ls_iterations = 0         # >0: override the solver linesearch iterations (0 = keep the XML value)
     config.success_threshold = 0.05  # Success: position error AND orientation error below this (used when the curriculum is off)
     config.curriculum_success = False  # The success threshold changes over the course of training (trirl_ppo_spr)
     config.success_threshold_values = "0.5,0.25,0.1,0.05" # Success thresholds over the course of training

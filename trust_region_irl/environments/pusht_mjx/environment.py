@@ -22,6 +22,19 @@ import jax
 import jax.numpy as jnp
 import mujoco
 from mujoco import mjx
+
+try:   # Data fields MJX-warp shares across worlds (contact buffers, sizes); they must not be selected per world
+    from mujoco.mjx.warp.types import DATA_NON_VMAP as _WARP_SHARED
+except ImportError:
+    _WARP_SHARED = set()
+
+
+def _select_state(pred, a, b):
+    """where(pred, a, b) over two States, keeping b's world-shared MJX-warp fields (identical to lax.cond for impl='jax')."""
+    def sel(path, x, y):
+        name = jax.tree_util.keystr(path).split(".")[-1]
+        return y if name in _WARP_SHARED else jnp.where(pred, x, y)
+    return jax.tree_util.tree_map_with_path(sel, a, b)
 import mujoco.mjx._src.support as mjx_support
 from scipy.spatial.transform import Rotation as R
 
@@ -102,7 +115,8 @@ class PushT:
     SINGULARITY_THRESHOLD = 0.05
 
     def __init__(self, render, horizon=250, reward_style="dense",
-                 success_threshold=0.1, feature_fn="base", random_TPos = False):
+                 success_threshold=0.1, feature_fn="base", random_TPos = False,
+                 impl="jax", nr_envs=64, contacts_per_env=64, ls_iterations=None):
         self.random_TPos = random_TPos
         self.horizon = horizon
         self.reward_style = reward_style
@@ -113,8 +127,27 @@ class PushT:
         self.mj_model = mujoco.MjModel.from_xml_path(xml_path)
         self.mj_model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
         self.mj_data = mujoco.MjData(self.mj_model)
-        self.mjx_model = mjx.put_model(self.mj_model)
-        self.mjx_data = mjx.make_data(self.mjx_model)
+        self.impl = impl   # MJX backend: "jax" (jax.numpy physics) or "warp" (MuJoCo Warp kernels, MuJoCo >= 3.6 for rendering too)
+        if ls_iterations is not None:
+            self.mj_model.opt.ls_iterations = ls_iterations
+        if impl == "warp":
+            self.mjx_model = mjx.put_model(self.mj_model, impl="warp")
+            o = getattr(self.mjx_model.opt, "_impl", None)
+            if hasattr(o, "warn_overflow"):   # MuJoCo >= 4: silence per-step solver/linesearch iteration-limit prints, keep buffer-overflow warnings
+                self.mjx_model = self.mjx_model.replace(opt=self.mjx_model.opt.replace(_impl=o.replace(warn_overflow=o.warn_overflow & ~((1 << 9) | (1 << 10)))))
+            # warp keeps ONE contact pool shared by all worlds: size it for every env, else contacts are silently dropped
+            import inspect
+            mk = inspect.signature(mjx.make_data).parameters
+            kw = {"naconmax" if "naconmax" in mk else "nconmax": contacts_per_env * nr_envs, "njmax": self.mj_model.njmax if self.mj_model.njmax > 0 else 1200}   # constraint rows per world, from the XML <size njmax>
+            if "naccdmax" in mk:   # convex-collision (CCD) buffer: MJX defaults it to ONE world's size, which overflows with many envs
+                kw["naccdmax"] = contacts_per_env * nr_envs
+            self.mjx_data = mjx.make_data(self.mj_model, impl="warp", **kw)
+            # warp kernels are not differentiable: the IK's manipulability gradient (jax.grad through kinematics) uses a JAX-backend copy of the model
+            self._ik_model = mjx.put_model(self.mj_model)
+            self._ik_data = mjx.make_data(self._ik_model)
+        else:
+            self.mjx_model = mjx.put_model(self.mj_model)
+            self.mjx_data = mjx.make_data(self.mjx_model)
 
         # 20 Hz control; model timestep 0.025 s -> 2 sim steps per control step
         self.nr_intermediate_steps = max(
@@ -254,11 +287,14 @@ class PushT:
         N = jnp.eye(J.shape[1]) - J_dls @ J  # projector built from the same damped inverse
         dq = dq + N @ (self.KP_ORI * (self.qhome - qnow))
 
+        # warp: differentiate through the JAX-backend copy (kinematics depends only on qpos, so the gradient is identical)
+        m_ik, d_ik = (self._ik_model, self._ik_data.replace(qpos=data.qpos)) if self.impl == "warp" else (self.mjx_model, data)
+
         def _manip(q):  # Yoshikawa manipulability as a function of the arm joints, for autodiff
-            d = data.replace(qpos=data.qpos.at[self.arm_qadr].set(q))
-            d = mjx.kinematics(self.mjx_model, d)  # forward kinematics only, cheaper than full forward
-            d = mjx.com_pos(self.mjx_model, d)
-            jp, jr = mjx_support.jac(self.mjx_model, d, d.xpos[self.ee_body_id], self.ee_body_id)
+            d = d_ik.replace(qpos=d_ik.qpos.at[self.arm_qadr].set(q))
+            d = mjx.kinematics(m_ik, d)  # forward kinematics only, cheaper than full forward
+            d = mjx.com_pos(m_ik, d)
+            jp, jr = mjx_support.jac(m_ik, d, d.xpos[self.ee_body_id], self.ee_body_id)
             Jq = jnp.concatenate([jp.T, jr.T], axis=0)[:, self.arm_dofadr]
             return jnp.sqrt(jnp.linalg.det(Jq @ Jq.T) + 1e-12)
 
@@ -452,7 +488,8 @@ class PushT:
                 actual_next_observation=next_observation,
                 reward=reward, terminated=terminated, truncated=truncated)
 
-        return jax.lax.cond(done, when_done, when_not_done, None)
+        # per-field select instead of lax.cond: under vmap cond becomes a select over every leaf, which would batch MJX-warp's world-shared Data fields
+        return _select_state(done, when_done(None), when_not_done(None))
 
     # --------------------------------------------------------- observation #
     def _block_rel_goal(self, data):
