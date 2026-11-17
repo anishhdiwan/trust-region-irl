@@ -5,7 +5,9 @@ dist/
 .DS_Store
 runs/
 wandb/
-trirl_dataset/
+trirl_dataset
+logs/
+results/
 trust_region_irl/algorithms/trirl_discrete/outputs/
 .idea
 trust_region_irl/environments/pusht_mjx/BUG_REPORT.txt

@@ -14,7 +14,7 @@ def get_config(environment_name):
     config.end_on_success = False      # True: end the episode at success (False: fixed horizon, no termination bias)
     config.wander_margin = 0.0         # 0 = env default (m beyond the rim, after touchdown)
     config.wander_hold_s = 0.0         # 0 = env default
-    config.impl = "jax"                # MJX backend: jax | warp (MuJoCo 3.6, see requirements_warp.txt)
+    config.impl = "jax"                # MJX backend: jax | warp (MuJoCo 3.6, see requirements.txt)
     config.contacts_per_env = 64       # warp only: contact slots per env in the shared contact pools
     config.ls_iterations = 0           # >0: override the solver linesearch iterations
     return config

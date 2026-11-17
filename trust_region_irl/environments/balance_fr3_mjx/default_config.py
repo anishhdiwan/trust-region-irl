@@ -10,7 +10,7 @@ def get_config(environment_name):
     config.device = "gpu"
     config.copy_train_env_for_eval = True
     config.horizon = 200               # steps at 20 Hz (10 s), as the BaMPC demos; fixed, no early termination
-    config.impl = "jax"                # MJX backend: jax | warp (MuJoCo 3.6, see requirements_warp.txt)
+    config.impl = "jax"                # MJX backend: jax | warp (MuJoCo 3.6, see requirements.txt)
     config.contacts_per_env = 64       # warp only: contact slots per env in the shared contact pools
     # dynamics variants for reward-transfer tests (1.0 = nominal BaMPC task)
     config.ball_mass_scale = 1.0       # ball mass and inertia

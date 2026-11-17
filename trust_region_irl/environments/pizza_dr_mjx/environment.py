@@ -123,7 +123,7 @@ class PizzaSpreadDR:
         if ls_iterations is not None:
             self.mj_model.opt.ls_iterations = ls_iterations
         self.mj_data = mujoco.MjData(self.mj_model)
-        self.impl = impl   # MJX backend: "jax" or "warp" (MuJoCo 3.6, see requirements_warp.txt)
+        self.impl = impl   # MJX backend: "jax" or "warp" (MuJoCo 3.6, see requirements.txt)
         if impl == "warp":
             self.mjx_model = mjx.put_model(self.mj_model, impl="warp")
             o = getattr(self.mjx_model.opt, "_impl", None)

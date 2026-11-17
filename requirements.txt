@@ -1,5 +1,5 @@
-# Versions tested with environment.impl=warp (Python 3.11, CUDA 12 build: runs on V100 and newer)
-# Install: pip install -r requirements_warp.txt, then RL-X from source (pip install -e path/to/RL-X)
+# Versions tested with environment.impl=warp and impl=jax (Python 3.11, CUDA 12 build: runs on V100 and newer).
+# install.sh installs these, then RL-X and this package from source without their own dependency lists.
 # CPU-only torch is enough (RL-X uses it only for TensorBoard): pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 # Physics: MuJoCo 3.6 is the oldest release with Warp physics and batch rendering
@@ -29,3 +29,9 @@ glfw==2.10.0
 wandb==0.28.0
 tensorboard==2.21.0
 tensorboardX==2.6.5
+
+# Evaluation and rendering scripts (scripts/)
+matplotlib==3.11.0
+imageio==2.37.3
+imageio-ffmpeg==0.6.0
+pillow==11.3.0
