@@ -15,6 +15,10 @@ def get_discriminator(config, env, reward_type='feature-based'):
         elif reward_type == 'byol-task-based-observation':
             # T position [0, 1, 2], T quaternion [3, 4, 5, 6]
             return BYOL(input_indices=(0, 1, 2, 3, 4, 5, 6))
+        elif reward_type == 'byol-embodiment-free':
+            # the encoder (and so the reward) sees only the task part of the observation: the env lists its non-robot entries
+            # (no arm joint positions/velocities), while the policy and critic keep the full observation
+            return BYOL(input_indices=tuple(int(i) for i in env.encoder_input_indices))
         else:
             raise NotImplementedError
 

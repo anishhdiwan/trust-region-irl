@@ -191,6 +191,8 @@ class PushT:
             shape=(2,), dtype=jnp.float32)
         self.single_observation_space = BoxSpace(
             low=-jnp.inf, high=jnp.inf, shape=(24,), dtype=jnp.float32)
+        # obs = block pos (3), block quat (4), ee pos rel goal (3), arm joint pos (7) and vel (7); the embodiment-free reward sees the first 10
+        self.encoder_input_indices = tuple(range(0, 10))
         if self.feature_fn == "state_action":
             feature_dim = self.single_observation_space.shape[0] + self.single_action_space.shape[0]
         elif self.feature_fn == "base":
