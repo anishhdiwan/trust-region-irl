@@ -71,10 +71,13 @@ class BalanceFR3:
     OBS_CLIP = 10.0
     BALL_XY_BOX = ((-0.09, -0.092), (0.094, 0.099))   # plate-local ball start range, as BaMPC's scenario bank and the demos
 
-    def __init__(self, render=False, horizon=200, impl="jax", nr_envs=64, contacts_per_env=64):
+    def __init__(self, render=False, horizon=200, impl="jax", nr_envs=64, contacts_per_env=64,
+                 ball_mass_scale=1.0, tilt_gain_scale=1.0, ik_k_pos_scale=1.0, ik_k_yaw_scale=1.0, ik_damping_scale=1.0):
+        # dynamics variants for reward-transfer tests (all 1.0 = BaMPC's nominal task): ball mass (inertia scaled with it,
+        # same solid sphere), and the task-space IK: tilt_gain scales the commanded plate tilt rate, k_pos / k_yaw the
+        # plate position and yaw hold gains, ik_damping the damped least-squares regulariser
         self.horizon = horizon
         self.impl = impl
-        # (the velocity tells which way the goal is heading, so two demos passing the same point in opposite directions are not confused)
         p = json.load(open(DATA / "balance_fr3_task_params.json"))
         m = mujoco.MjModel.from_xml_path(str(DATA / "balance_fr3_model.xml"))
         for k, v in json.load(open(DATA / "balance_fr3_opt.json")).items():   # solver options BaMPC writes after compiling
@@ -86,6 +89,10 @@ class BalanceFR3:
         b0 = m.body("fr3_link0").id   # fixed base: XML recomputes its inertial, set BaMPC's (no effect on dynamics)
         for f in ("body_mass", "body_inertia", "body_ipos", "body_iquat"):
             getattr(m, f)[b0] = inert[f][b0]
+        if ball_mass_scale != 1.0:
+            bb = int(p["ball_body_id"])
+            m.body_mass[bb] *= ball_mass_scale; m.body_inertia[bb] *= ball_mass_scale
+            mujoco.mj_setConst(m, mujoco.MjData(m))   # recompute what MuJoCo derives from the masses at compile time (subtree masses, inverse weights for contact softness)
         self.mj_model = m
         if impl == "warp":
             self.mjx_model = mjx.put_model(m, impl="warp")
@@ -102,8 +109,9 @@ class BalanceFR3:
 
         self.ee_body_id = int(p["ee_body_id"]); self.plate_id = int(p["plate_body_id"]); self.ball_id = int(p["ball_body_id"])
         self.arm_dofadr = jnp.asarray(p["arm_dofadr"]); self.arm_qposadr = jnp.asarray(p["arm_qposadr"])
-        self.k_pos, self.k_yaw, self.ik_damping = float(p["k_pos"]), float(p["k_yaw"]), float(p["ik_damping"])
+        self.k_pos, self.k_yaw, self.ik_damping = float(p["k_pos"]) * ik_k_pos_scale, float(p["k_yaw"]) * ik_k_yaw_scale, float(p["ik_damping"]) * ik_damping_scale
         self.max_tilt_vel = float(p.get("max_tilt_vel", 1.0))
+        self.tilt_gain = float(tilt_gain_scale)
         self.ee_home_pos = jnp.asarray(p["ee_home_pos"], jnp.float32); self.ee_home_quat = jnp.asarray(p["ee_home_quat"], jnp.float32)
         self.rest_z = float(p["ball_local_z"]); self.lost_margin = float(p["lost_margin"])
         self.home_qpos = jnp.asarray(p["home_qpos"], jnp.float32)
@@ -124,7 +132,7 @@ class BalanceFR3:
         J = jnp.concatenate([jacp.T, jacr.T], axis=0)[:, self.arm_dofadr]   # (6, 7)
         ee_pos, ee_quat = data.xpos[self.ee_body_id], data.xquat[self.ee_body_id]
         e_world = _rotate(ee_quat, _sub_quat(self.ee_home_quat, ee_quat))
-        twist = jnp.concatenate([self.k_pos * (self.ee_home_pos - ee_pos), u, jnp.array([self.k_yaw * e_world[2]])])
+        twist = jnp.concatenate([self.k_pos * (self.ee_home_pos - ee_pos), self.tilt_gain * u, jnp.array([self.k_yaw * e_world[2]])])
         return J.T @ jnp.linalg.solve(J @ J.T + self.ik_damping * jnp.eye(6), twist)
 
     def physics_step(self, data, u_sub):
