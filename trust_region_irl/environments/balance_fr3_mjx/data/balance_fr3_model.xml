@@ -1,0 +1,205 @@
+<mujoco model="balance_fr3 scene">
+  <!-- BaMPC's Balance-FR3 scene, exported from their MuJoCo 3.10 setup; solver options are set from balance_fr3_opt.json. -->
+  <compiler angle="radian" meshdir="assets"/>
+
+  <size nkey="1"/>
+
+  <statistic extent="1" center="0.4 0 0.4"/>
+
+  <default>
+    <default class="block">
+      <geom condim="6" friction="0.06 0.001 1e-05" solimp="0.9 0.99"/>
+    </default>
+    <default class="goal">
+      <geom contype="0" conaffinity="0" rgba="0 1 0 0.15"/>
+    </default>
+    <default class="fr3">
+      <joint armature="0.195" damping="0.21" frictionloss="1.137"/>
+      <site size="0.001 0.005 0.005" group="4" rgba="0.5 0.5 0.5 0.3"/>
+      <general biastype="affine" biasprm="0 -1"/>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom contype="0" conaffinity="2" group="3"/>
+      </default>
+      <default class="fr3_vel_proximal">
+        <general ctrllimited="true" forcelimited="true" forcerange="-87 87" gainprm="50" biasprm="0 0 -50"/>
+      </default>
+      <default class="fr3_vel_wrist">
+        <general ctrllimited="true" forcelimited="true" forcerange="-12 12" gainprm="50" biasprm="0 0 -50"/>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="skybox" colorspace="auto" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" colorspace="auto" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="black" rgba="0.2 0.2 0.2 1"/>
+    <material name="white"/>
+    <material name="red" rgba="1 0.072272 0.039546 1"/>
+    <material name="gray" rgba="0.863156 0.863156 0.863157 1"/>
+    <material name="button_green" rgba="0.102241 0.571125 0.102242 1"/>
+    <material name="button_red" rgba="0.520996 0.008023 0.013702 1"/>
+    <material name="button_blue" rgba="0.024157 0.445201 0.737911 1"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <mesh name="link0_0" file="link0_0.obj"/>
+    <mesh name="link0_1" file="link0_1.obj"/>
+    <mesh name="link0_2" file="link0_2.obj"/>
+    <mesh name="link0_3" file="link0_3.obj"/>
+    <mesh name="link0_4" file="link0_4.obj"/>
+    <mesh name="link0_5" file="link0_5.obj"/>
+    <mesh name="link0_6" file="link0_6.obj"/>
+    <mesh name="link1" file="link1.obj"/>
+    <mesh name="link2" file="link2.obj"/>
+    <mesh name="link3_0" file="link3_0.obj"/>
+    <mesh name="link3_1" file="link3_1.obj"/>
+    <mesh name="link4_0" file="link4_0.obj"/>
+    <mesh name="link4_1" file="link4_1.obj"/>
+    <mesh name="link5_0" file="link5_0.obj"/>
+    <mesh name="link5_1" file="link5_1.obj"/>
+    <mesh name="link5_2" file="link5_2.obj"/>
+    <mesh name="link6_0" file="link6_0.obj"/>
+    <mesh name="link6_1" file="link6_1.obj"/>
+    <mesh name="link6_2" file="link6_2.obj"/>
+    <mesh name="link6_3" file="link6_3.obj"/>
+    <mesh name="link6_4" file="link6_4.obj"/>
+    <mesh name="link6_5" file="link6_5.obj"/>
+    <mesh name="link6_6" file="link6_6.obj"/>
+    <mesh name="link6_7" file="link6_7.obj"/>
+    <mesh name="link7_0" file="link7_0.obj"/>
+    <mesh name="link7_1" file="link7_1.obj"/>
+    <mesh name="link7_2" file="link7_2.obj"/>
+    <mesh name="link7_3" file="link7_3.obj"/>
+    <mesh name="link0_coll" file="link0.stl"/>
+    <mesh name="link1_coll" file="link1.stl"/>
+    <mesh name="link2_coll" file="link2.stl"/>
+    <mesh name="link3_coll" file="link3.stl"/>
+    <mesh name="link4_coll" file="link4.stl"/>
+    <mesh name="link5_coll" file="link5.stl"/>
+    <mesh name="link6_coll" file="link6.stl"/>
+    <mesh name="link7_coll" file="link7.stl"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.0001" type="plane" contype="0" conaffinity="0" material="groundplane"/>
+    <camera name="top_view" pos="-0.276 -0.512 0.817" quat="0.916676 0.303006 -0.081777 -0.247398"/>
+    <camera name="main" pos="-0.719 1.218 1.689" quat="-0.286287 -0.131835 0.39696 0.862022"/>
+    <camera name="video" pos="1.017 1.077 1.437" quat="0.252809 0.129561 0.437293 0.853274"/>
+    <light pos="0 0 1.5" dir="0 0 -1" type="directional"/>
+    <body name="goal" pos="0.4 0 0.55" mocap="true">
+      <geom name="goal_ball" class="goal" size="0.04" mass="0.1"/>
+    </body>
+    <body name="block" childclass="block" pos="0.4 0 0.55">
+      <joint name="block" type="free"/>
+      <geom name="block_ball" size="0.04" mass="0.1"/>
+      <site name="attractor_site1" pos="0 0.05 0" size="0.015"/>
+      <site name="attractor_site2" pos="-0.0433 -0.025 0" size="0.015"/>
+      <site name="attractor_site3" pos="0.0433 -0.025 0" size="0.015"/>
+    </body>
+    <body name="base" childclass="fr3" gravcomp="1">
+      <body name="fr3_link0" gravcomp="1">
+        <geom class="visual" material="black" mesh="link0_0"/>
+        <geom class="visual" material="white" mesh="link0_1"/>
+        <geom class="visual" material="white" mesh="link0_2"/>
+        <geom class="visual" material="white" mesh="link0_3"/>
+        <geom class="visual" material="white" mesh="link0_4"/>
+        <geom class="visual" material="red" mesh="link0_5"/>
+        <geom class="visual" material="black" mesh="link0_6"/>
+        <geom class="collision" size="0.06 0.06" pos="0 0 0.14" type="capsule"/>
+        <body name="fr3_link1" pos="0 0 0.333" gravcomp="1">
+          <inertial pos="4.128e-07 -0.0181251 -0.0386036" quat="0.998098 -0.0605364 0.00380499 0.0110109" mass="2.92747" diaginertia="0.0239286 0.0227246 0.00610634"/>
+          <joint name="fr3_joint1" pos="0 0 0" axis="0 0 1" range="-2.7437 2.7437" actuatorfrcrange="-87 87"/>
+          <geom class="collision" size="0.06 0.08" quat="0.707107 0.707107 0 0" type="capsule"/>
+          <geom class="visual" material="white" mesh="link1"/>
+          <body name="fr3_link2" quat="0.707107 -0.707107 0 0" gravcomp="1">
+            <inertial pos="0.00318289 -0.0743222 0.00881461" quat="0.502599 0.584437 -0.465998 0.434366" mass="2.93554" diaginertia="0.0629567 0.0411924 0.0246371"/>
+            <joint name="fr3_joint2" pos="0 0 0" axis="0 0 1" range="-1.7837 1.7837" actuatorfrcrange="-87 87"/>
+            <geom class="visual" material="white" mesh="link2"/>
+            <geom class="collision" size="0.07 0.03" pos="0 -0.17 0" quat="0.707107 0.707107 0 0" type="capsule"/>
+            <body name="fr3_link3" pos="0 -0.316 0" quat="0.707107 0.707107 0 0" gravcomp="1">
+              <inertial pos="0.0407016 -0.00482006 -0.0289731" quat="0.921025 -0.244161 0.155272 0.260745" mass="2.2449" diaginertia="0.0267409 0.0189869 0.0171587"/>
+              <joint name="fr3_joint3" pos="0 0 0" axis="0 0 1" range="-2.9007 2.9007" actuatorfrcrange="-87 87"/>
+              <geom class="visual" material="white" mesh="link3_0"/>
+              <geom class="visual" material="black" mesh="link3_1"/>
+              <body name="fr3_link4" pos="0.0825 0 0" quat="0.707107 0.707107 0 0" gravcomp="1">
+                <inertial pos="-0.0459101 0.0630493 -0.00851879" quat="0.438018 0.803311 0.00937812 0.403414" mass="2.6156" diaginertia="0.05139 0.0372717 0.0160047"/>
+                <joint name="fr3_joint4" pos="0 0 0" axis="0 0 1" range="-3.0421 -0.1518" actuatorfrcrange="-87 87"/>
+                <geom class="visual" material="white" mesh="link4_0"/>
+                <geom class="visual" material="black" mesh="link4_1"/>
+                <body name="fr3_link5" pos="-0.0825 0.384 0" quat="0.707107 -0.707107 0 0" gravcomp="1">
+                  <inertial pos="-0.00160396 0.0292536 -0.0972966" quat="0.919031 0.125604 0.0751531 -0.366003" mass="2.32712" diaginertia="0.0579335 0.0449144 0.0130634"/>
+                  <joint name="fr3_joint5" pos="0 0 0" axis="0 0 1" range="-2.8065 2.8065" actuatorfrcrange="-12 12" armature="0.074" frictionloss="0.763"/>
+                  <geom class="collision" size="0.06 0.06" pos="0 0 -0.275" quat="0 1 0 0" type="capsule"/>
+                  <geom class="visual" material="white" mesh="link5_0"/>
+                  <geom class="visual" material="white" mesh="link5_1"/>
+                  <geom class="visual" material="black" mesh="link5_2"/>
+                  <body name="fr3_link6" quat="0.707107 0.707107 0 0" gravcomp="1">
+                    <inertial pos="0.0597131 -0.0410295 -0.0101693" quat="0.621301 0.552665 0.510011 0.220081" mass="1.81704" diaginertia="0.0175039 0.0161123 0.00193529"/>
+                    <joint name="fr3_joint6" pos="0 0 0" axis="0 0 1" range="0.5445 4.5169" actuatorfrcrange="-12 12" armature="0.074" frictionloss="0.44"/>
+                    <geom class="visual" material="button_green" mesh="link6_0"/>
+                    <geom class="visual" material="white" mesh="link6_1"/>
+                    <geom class="visual" material="white" mesh="link6_2"/>
+                    <geom class="visual" material="gray" mesh="link6_3"/>
+                    <geom class="visual" material="button_red" mesh="link6_4"/>
+                    <geom class="visual" material="white" mesh="link6_5"/>
+                    <geom class="visual" material="black" mesh="link6_6"/>
+                    <geom class="visual" material="button_blue" mesh="link6_7"/>
+                    <geom class="collision" size="0.06 0.04" pos="0 0 -0.04" quat="0 1 0 0" type="capsule"/>
+                    <body name="fr3_link7" pos="0.088 0 0" quat="0.707107 0.707107 0 0" gravcomp="1">
+                      <inertial pos="0.00452258 0.00862619 -0.0161633" quat="0.727579 0.0978688 -0.24906 0.63168" mass="0.627143" diaginertia="0.000223836 0.000223642 5.64132e-07"/>
+                      <joint name="fr3_joint7" pos="0 0 0" axis="0 0 1" range="-3.0159 3.0159" actuatorfrcrange="-12 12" armature="0.074" frictionloss="0.248"/>
+                      <geom class="visual" material="black" mesh="link7_0"/>
+                      <geom class="visual" material="white" mesh="link7_1"/>
+                      <geom class="visual" material="white" mesh="link7_2"/>
+                      <geom class="visual" material="black" mesh="link7_3"/>
+                      <geom class="collision" size="0.05 0.05" quat="0 1 0 0" type="capsule"/>
+                      <site name="attachment_site" pos="0 0 0.107"/>
+                      <body name="ee_frame" pos="0 0 0.107" gravcomp="1">
+                        <geom size="0.018 0.025" pos="0 0 0.025" type="cylinder" contype="0" conaffinity="0" mass="0.125" rgba="0.1 0.1 0.1 1"/>
+                        <body name="plate_body" pos="0 0 0.05025" quat="0.930418 0 0 -0.366501" gravcomp="1">
+                          <geom name="plate" size="0.195 0.25 0.00425" type="box" friction="0.3" solimp="0 0.95 0.005" mass="1" rgba="0.6 0.6 0.65 1"/>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="fr3_link0" body2="fr3_link1"/>
+    <exclude body1="fr3_link1" body2="fr3_link2"/>
+    <exclude body1="fr3_link6" body2="fr3_link7"/>
+  </contact>
+
+  <actuator>
+    <general name="vel_joint1" class="fr3_vel_proximal" joint="fr3_joint1" ctrlrange="-2.62 2.62"/>
+    <general name="vel_joint2" class="fr3_vel_proximal" joint="fr3_joint2" ctrlrange="-2.62 2.62"/>
+    <general name="vel_joint3" class="fr3_vel_proximal" joint="fr3_joint3" ctrlrange="-2.62 2.62"/>
+    <general name="vel_joint4" class="fr3_vel_proximal" joint="fr3_joint4" ctrlrange="-2.62 2.62"/>
+    <general name="vel_joint5" class="fr3_vel_wrist" joint="fr3_joint5" ctrlrange="-5.26 5.26"/>
+    <general name="vel_joint6" class="fr3_vel_wrist" joint="fr3_joint6" ctrlrange="-4.18 4.18"/>
+    <general name="vel_joint7" class="fr3_vel_wrist" joint="fr3_joint7" ctrlrange="-5.26 5.26"/>
+  </actuator>
+
+  <sensor>
+    <framepos objtype="body" objname="block" reftype="body" refname="goal" name="position"/>
+    <framequat objtype="body" objname="block" reftype="body" refname="goal" name="orientation"/>
+    <framepos objtype="body" objname="block" name="position_world"/>
+    <framepos objtype="body" objname="goal" name="goal_position_world"/>
+    <framequat objtype="body" objname="block" name="orientation_world"/>
+    <framequat objtype="body" objname="goal" name="goal_orientation_world"/>
+    <framezaxis objtype="body" objname="ee_frame" name="ee_zaxis"/>
+    <framepos objtype="body" objname="ee_frame" name="ee_position_world"/>
+  </sensor>
+
+  <keyframe>
+    <key name="home" qpos="0.4 0 0.55 1 0 0 0 1.37404 -1.40987 -0.97431 -2.5512 2.16327 1.74726 2.01986"/>
+  </keyframe>
+</mujoco>
