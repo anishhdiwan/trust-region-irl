@@ -1030,6 +1030,7 @@ class TRIRL_PPO:
         self.config.runner.track_tb = True
         self.config.runner.track_wandb = True
         self.config.runner.track_console = True
+        self.config.runner.save_model = True   # RL-X test mode forbids saving; the retrained policy is the result, so keep it
         run_name = f"{self.config.runner.run_name}_ppo_retraining"
         run_path = f"runs/{self.config.runner.project_name}/{self.config.runner.exp_name}/{run_name}"
         run_path = os.path.abspath(run_path)
