@@ -252,20 +252,17 @@ class AMP_PPO:
 
                     # Expert batch
                     key, shuffle_key = jax.random.split(key)
-                    perm = jax.random.permutation(shuffle_key, expert_states.shape[0])
-                    expert_states = expert_states[perm]
-                    expert_actions = expert_actions[perm]
-                    batch_expert_states = expert_states[:self.batch_size]
-                    batch_expert_actions = expert_actions[:self.batch_size]
+                    # sample with replacement so the batch has batch_size rows even if the expert data is smaller
+                    expert_idx = jax.random.randint(shuffle_key, (self.batch_size,), 0, expert_states.shape[0])
+                    batch_expert_states = expert_states[expert_idx]
+                    batch_expert_actions = expert_actions[expert_idx]
                     expert_labels = jnp.ones((self.batch_size, 1), dtype=jnp.float32)
                     rollout_labels = jnp.zeros((self.batch_size, 1), dtype=jnp.float32)
 
                     batch_next_states = next_states.reshape((-1,) + self.os_shape)
                     batch_absorbing = terminations.reshape(-1)
-                    expert_next_states = expert_next_states[perm]
-                    expert_absorbing = expert_absorbing[perm]
-                    batch_expert_next_states = expert_next_states[:self.batch_size]
-                    batch_expert_absorbing = expert_absorbing[:self.batch_size]
+                    batch_expert_next_states = expert_next_states[expert_idx]
+                    batch_expert_absorbing = expert_absorbing[expert_idx]
 
                     vmap_amp_loss_fn = jax.vmap(amp_loss_fn, in_axes=(None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), out_axes=0)
                     safe_mean = lambda x: jnp.mean(x) if x is not None else x

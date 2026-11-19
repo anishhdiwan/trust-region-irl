@@ -1,10 +1,11 @@
 
+import numpy as np
 import jax
 import jax.numpy as jnp
 import flax
 from flax import struct
-from typing import NamedTuple
 from flax.core import FrozenDict
+
 
 @struct.dataclass
 class ParamsBuffer:
@@ -25,15 +26,16 @@ class ParamsBuffer:
 
 
     @classmethod
-    def create(cls, params: FrozenDict, size: int):
+    def create(cls, params, size):
         return ParamsBuffer(
             params=jax.tree.map(lambda x: jnp.stack([x] * size), params),
             n=jnp.asarray(0, dtype=jnp.int32),
             size=size
         )
 
+
     @classmethod
-    def add(cls, params_buffer, params: FrozenDict):
+    def add(cls, params_buffer, params):
         index = params_buffer.n
         size = params_buffer.size
 
@@ -54,10 +56,12 @@ class ParamsBuffer:
             n=jnp.minimum(index + 1, size),
         )
 
+
     @classmethod
     def sample(cls, params_buffer):
         level = jnp.minimum(params_buffer.n, params_buffer.size)
         return params_buffer.params, level
+
 
     @classmethod
     def sample_oldest(cls, params_buffer, k=1):
@@ -89,16 +93,18 @@ class EtasBuffer:
             "size": serialized_size,
         }
 
+
     @classmethod
-    def create(cls, etas: jax.Array, size: int):
+    def create(cls, etas, size):
         return EtasBuffer(
             etas=jax.tree.map(lambda x: jnp.stack([jnp.zeros_like(x)] * size), etas),
             n=jnp.asarray(0, dtype=jnp.int32),
             size=size
         )
 
+
     @classmethod
-    def add(cls, etas_buffer, etas: jax.Array):
+    def add(cls, etas_buffer, etas):
         index = etas_buffer.n
         size = etas_buffer.size
 
@@ -118,6 +124,7 @@ class EtasBuffer:
             etas=etas_updated,
             n=jnp.minimum(index + 1, size),
         )
+
 
     @classmethod
     def sample(cls, etas_buffer):

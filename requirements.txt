@@ -1,0 +1,37 @@
+# Versions tested with environment.impl=warp and impl=jax (Python 3.11, CUDA 12 build: runs on V100 and newer).
+# install.sh installs these, then RL-X and this package from source without their own dependency lists.
+# CPU-only torch is enough (RL-X uses it only for TensorBoard): pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Physics: MuJoCo 3.6 is the oldest release with Warp physics and batch rendering
+mujoco==3.6.0
+mujoco-mjx==3.6.0
+warp-lang==1.11.1
+
+# JAX on CUDA 12 (CUDA 13 builds do not run on V100s)
+jax[cuda12]==0.7.1
+numpy==2.2.6
+
+# Training stack
+flax==0.12.0
+optax==0.2.8
+chex==0.1.92
+distrax==0.1.9
+tensorflow-probability==0.25.0
+orbax-checkpoint==0.12.1
+dm-tree==0.1.10
+ml-collections
+scipy==1.17.1
+absl-py==2.5.0
+gymnasium==0.29.1
+glfw==2.10.0
+
+# Logging
+wandb==0.28.0
+tensorboard==2.21.0
+tensorboardX==2.6.5
+
+# Evaluation and rendering scripts (scripts/)
+matplotlib==3.11.0
+imageio==2.37.3
+imageio-ffmpeg==0.6.0
+pillow==11.3.0

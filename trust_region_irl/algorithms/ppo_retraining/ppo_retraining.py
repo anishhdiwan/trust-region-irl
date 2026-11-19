@@ -110,6 +110,8 @@ class PPO_RETRAINING:
         if self.save_model:
             os.makedirs(self.save_path)
             self.latest_model_file_name = "latest.model"
+            self.best_model_file_name = "best.model"
+            self.best_eval_return = -np.inf
             self.latest_model_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
 
  
@@ -333,9 +335,16 @@ class PPO_RETRAINING:
 
                 # Saving
                 if self.save_model:
-                    def save_with_check(policy_state, critic_state):
-                        self.save(policy_state, critic_state)
-                    jax.debug.callback(save_with_check, policy_state, critic_state)
+                    eval_return_for_save = eval_metrics["eval/episode_return"] if self.evaluation_active else jnp.asarray(-jnp.inf)
+
+                    def save_with_check(policy_state, critic_state, eval_return):
+                        self.save(policy_state, critic_state)   # latest.model, every evaluation
+                        current_return = float(np.asarray(eval_return).reshape(-1)[0])
+                        if self.evaluation_active and current_return > self.best_eval_return:   # best.model: highest deterministic eval/episode_return so far
+                            self.best_eval_return = current_return
+                            self.save(policy_state, critic_state, file_name=self.best_model_file_name)
+                            rlx_logger.info(f"[save-best] new best eval/episode_return={current_return:.4f} -> {self.best_model_file_name}")
+                    jax.debug.callback(save_with_check, policy_state, critic_state, eval_return_for_save)
 
                 
                 return (policy_state, critic_state, env_state, key), None
@@ -382,7 +391,8 @@ class PPO_RETRAINING:
             rlx_logger.info("└" + "─" * 31 + "┴" + "─" * 16 + "┘")
 
 
-    def save(self, policy_state, critic_state):
+    def save(self, policy_state, critic_state, file_name=None):
+        file_name = file_name or self.latest_model_file_name
         checkpoint = {
             "policy": policy_state,
             "critic": critic_state
@@ -391,12 +401,12 @@ class PPO_RETRAINING:
         self.latest_model_checkpointer.save(f"{self.save_path}/tmp", checkpoint, save_args=save_args)
         with open(f"{self.save_path}/tmp/config_algorithm.json", "w") as f:
             json.dump(self.config.algorithm.to_dict(), f)
-        shutil.make_archive(f"{self.save_path}/{self.latest_model_file_name}", "zip", f"{self.save_path}/tmp")
-        os.rename(f"{self.save_path}/{self.latest_model_file_name}.zip", f"{self.save_path}/{self.latest_model_file_name}")
+        shutil.make_archive(f"{self.save_path}/{file_name}", "zip", f"{self.save_path}/tmp")
+        os.rename(f"{self.save_path}/{file_name}.zip", f"{self.save_path}/{file_name}")
         shutil.rmtree(f"{self.save_path}/tmp")
 
         if self.track_wandb:
-            wandb.save(f"{self.save_path}/{self.latest_model_file_name}", base_path=self.save_path)
+            wandb.save(f"{self.save_path}/{file_name}", base_path=self.save_path)
     
 
     def load(config, train_env, eval_env, run_path, writer, explicitly_set_algorithm_params):

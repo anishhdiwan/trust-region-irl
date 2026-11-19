@@ -1,0 +1,19 @@
+{
+ "timestep": 0.01,
+ "impratio": 1.0,
+ "iterations": 16,
+ "ls_iterations": 20,
+ "tolerance": 1e-08,
+ "ls_tolerance": 0.01,
+ "noslip_iterations": 0,
+ "noslip_tolerance": 1e-06,
+ "ccd_iterations": 35,
+ "ccd_tolerance": 1e-06,
+ "solver": 2,
+ "integrator": 3,
+ "cone": 1,
+ "jacobian": 0,
+ "disableflags": 0,
+ "enableflags": 0,
+ "o_margin": 0.0
+}

@@ -1,0 +1,42 @@
+<mujoco model="fr3 pizza-spreading scene">
+  <include file="fr3_vel_mjx_free.xml"/>
+
+<option impratio="1.5"
+          solver="Newton"
+          jacobian="dense"
+          integrator="implicitfast"
+          cone="elliptic"
+          timestep="0.025" 
+          iterations="7"
+          ls_iterations="10">
+    <flag eulerdamp="disable" 
+          warmstart="enable"/>
+  </option>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.2 0.25 0.35" rgb2="0.05 0.07 0.1" width="64" height="64"/>
+    <texture name="floor_tex" type="2d" builtin="checker" rgb1="0.18 0.25 0.32" rgb2="0.12 0.17 0.23" width="64" height="64"/>
+    <material name="floor_mat" texture="floor_tex" texrepeat="8 8"/>
+    <material name="board_mat" rgba="0.82 0.71 0.55 1"/>
+    <material name="sauce_mat" rgba="0.72 0.16 0.10 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0.6 0 1.4" dir="0 0 -1" diffuse="0.9 0.9 0.9"/>
+    <geom name="floor" type="plane" size="3 3 0.1" material="floor_mat" contype="0" conaffinity="0"/>
+
+    <!-- Pizza board of the real rig (centre measured with OptiTrack, sauce disc radius 146 mm). With domain
+         randomisation the pizza is only a sampled centre and radius, so this board is visual only: the tool spreads
+         above it (tool sphere bottom 20 mm above the board top) and never touches it. -->
+    <body name="pizza" pos="0.6147 -0.0094 0.0">
+      <geom name="board" type="box" size="0.170 0.170 0.0145" pos="0 0 0.0145"
+            material="board_mat" contype="1" conaffinity="1" friction="0.8 0.01 0.0005"
+            group="3" rgba="0.82 0.71 0.55 0.15"/>
+      <geom name="board_disc" type="cylinder" size="0.170 0.0145" pos="0 0 0.0145"
+            material="board_mat" contype="0" conaffinity="0" group="2"/>
+      <geom name="sauce" type="cylinder" size="0.146 0.0005" pos="0 0 0.0296"
+            material="sauce_mat" contype="0" conaffinity="0" group="2"/>
+      <site name="pizza_centre" pos="0 0 0.0291" size="0.004" rgba="1 1 0 0.6" group="4"/>
+    </body>
+  </worldbody>
+</mujoco>
